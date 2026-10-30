@@ -1,122 +1,152 @@
 import { useState } from 'react'
-import heroImg from './assets/hero.png'
-import reactLogo from './assets/react.svg'
-import viteLogo from './assets/vite.svg'
-import './App.css'
+import {
+  ThemeProvider,
+  CssBaseline,
+  Box,
+  Container,
+  Snackbar,
+  Alert,
+  Typography,
+  Link as MuiLink,
+} from '@mui/material'
+import { theme } from './theme'
+import { AuthProvider } from './context/AuthContext'
+import { useAuth } from './context/useAuth'
+import Navbar from './components/Navbar'
+import JobsList from './components/JobsList'
+import StudentBookings from './components/StudentBookings'
+import EmployerDashboard from './components/EmployerDashboard'
+import AdminDashboard from './components/AdminDashboard'
+import SettingsModal from './components/SettingsModal'
+import AuthLoginPage from './components/AuthLoginPage'
 
-function App() {
-  const [count, setCount] = useState(0)
+function MainContent() {
+  const { user, isAuthenticated } = useAuth()
+  const [currentTab, setCurrentTab] = useState('jobs')
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+
+  // Centralized notifications
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'info', // 'success' | 'error' | 'warning' | 'info'
+  })
+
+  const showNotification = (message, severity = 'info') => {
+    setSnackbar({
+      open: true,
+      message,
+      severity,
+    })
+  }
+
+  const handleCloseSnackbar = (_, reason) => {
+    if (reason === 'clickaway') return
+    setSnackbar((prev) => ({ ...prev, open: false }))
+  }
+
+  // Adjust tab automatically if unauthorized
+  const handleTabChange = (newTab) => {
+    if (newTab === 'my-bookings' && (!isAuthenticated || user?.role !== 'student')) {
+      showNotification('Please sign in as a student to view your bookings', 'warning')
+      return
+    }
+    if (newTab === 'employer' && (!isAuthenticated || user?.role !== 'employer')) {
+      showNotification('Please sign in as an employer to access employer hub', 'warning')
+      return
+    }
+    if (newTab === 'admin' && (!isAuthenticated || user?.role !== 'admin')) {
+      showNotification('Please sign in with administrator credentials', 'warning')
+      return
+    }
+    setCurrentTab(newTab)
+  }
+
+  if (!isAuthenticated) {
+    return <AuthLoginPage />
+  }
 
   return (
-    <>
-      <section id="center">
-        <div className="hero">
-          <img src={heroImg} className="base" width="170" height="179" alt="" />
-          <img src={reactLogo} className="framework" alt="React logo" />
-          <img src={viteLogo} className="vite" alt="Vite logo" />
-        </div>
-        <div>
-          <h1>Get started</h1>
-          <p>
-            Edit <code>src/App.jsx</code> and save to test <code>HMR</code>
-          </p>
-        </div>
-        <button
-          type="button"
-          className="counter"
-          onClick={() => setCount((count) => count + 1)}
-        >
-          Count is {count}
-        </button>
-      </section>
+    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+      <Navbar
+        currentTab={currentTab}
+        onTabChange={handleTabChange}
+        onOpenAuth={() => {}}
+        onOpenSettings={() => setSettingsModalOpen(true)}
+      />
 
-      <div className="ticks"></div>
+      <Container maxWidth="xl" component="main" sx={{ flexGrow: 1, py: 2 }}>
+        {currentTab === 'jobs' && (
+          <JobsList
+            onOpenAuth={() => setAuthModalOpen(true)}
+            showNotification={showNotification}
+          />
+        )}
 
-      <section id="next-steps">
-        <div id="docs">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#documentation-icon"></use>
-          </svg>
-          <h2>Documentation</h2>
-          <p>Your questions, answered</p>
-          <ul>
-            <li>
-              <a href="https://vite.dev/" target="_blank">
-                <img className="logo" src={viteLogo} alt="" />
-                Explore Vite
-              </a>
-            </li>
-            <li>
-              <a href="https://react.dev/" target="_blank">
-                <img className="button-icon" src={reactLogo} alt="" />
-                Learn more
-              </a>
-            </li>
-          </ul>
-        </div>
-        <div id="social">
-          <svg className="icon" role="presentation" aria-hidden="true">
-            <use href="/icons.svg#social-icon"></use>
-          </svg>
-          <h2>Connect with us</h2>
-          <p>Join the Vite community</p>
-          <ul>
-            <li>
-              <a href="https://github.com/vitejs/vite" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#github-icon"></use>
-                </svg>
-                GitHub
-              </a>
-            </li>
-            <li>
-              <a href="https://chat.vite.dev/" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#discord-icon"></use>
-                </svg>
-                Discord
-              </a>
-            </li>
-            <li>
-              <a href="https://x.com/vite_js" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#x-icon"></use>
-                </svg>
-                X.com
-              </a>
-            </li>
-            <li>
-              <a href="https://bsky.app/profile/vite.dev" target="_blank">
-                <svg
-                  className="button-icon"
-                  role="presentation"
-                  aria-hidden="true"
-                >
-                  <use href="/icons.svg#bluesky-icon"></use>
-                </svg>
-                Bluesky
-              </a>
-            </li>
-          </ul>
-        </div>
-      </section>
+        {currentTab === 'my-bookings' && (
+          <StudentBookings
+            onBrowseJobs={() => setCurrentTab('jobs')}
+            showNotification={showNotification}
+          />
+        )}
 
-      <div className="ticks"></div>
-      <section id="spacer"></section>
-    </>
+        {currentTab === 'employer' && (
+          <EmployerDashboard showNotification={showNotification} />
+        )}
+
+        {currentTab === 'admin' && (
+          <AdminDashboard showNotification={showNotification} />
+        )}
+      </Container>
+
+      {/* Footer */}
+      <Box
+        component="footer"
+        sx={{
+          py: 3,
+          px: 2,
+          mt: 'auto',
+          borderTop: '1px solid #e2e8f0',
+          bgcolor: 'white',
+          textAlign: 'center',
+        }}
+      >
+        <Typography variant="body2" color="text.secondary">
+          NextShift Campus Job Marketplace • Built with Material-UI & React 19
+        </Typography>
+        <Typography variant="caption" color="text.secondary">
+          Backend API Contract: <MuiLink href="/ref/FRONTEND_API_HANDOFF.md" target="_blank">ref/FRONTEND_API_HANDOFF.md</MuiLink>
+        </Typography>
+      </Box>
+
+      {/* Settings Modal */}
+      <SettingsModal
+        open={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
+      />
+
+      {/* Notification Toast */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={5000}
+        onClose={handleCloseSnackbar}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, boxShadow: 3 }}>
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
   )
 }
 
-export default App
+export default function App() {
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <AuthProvider>
+        <MainContent />
+      </AuthProvider>
+    </ThemeProvider>
+  )
+}

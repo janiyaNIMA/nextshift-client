@@ -1,16 +1,43 @@
-# React + Vite
+# NextShift Client
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+A modern Material-UI (MUI) frontend for the **NextShift** Campus Part-time Job Marketplace, built strictly according to the API specification in [`ref/FRONTEND_API_HANDOFF.md`](./ref/FRONTEND_API_HANDOFF.md).
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- **MUI Component System**: Built with `@mui/material` and `@mui/icons-material`, themed with responsive layouts, styled cards, modals, and snackbar notifications.
+- **Role-Based Experience**:
+  - **Public / Unauthenticated**: Browse published shifts, filter by category/location, search by keywords, view job details.
+  - **Student**: Sign up (instant approval), book open shifts, manage confirmed bookings under "My Bookings".
+  - **Employer**: Register (requires admin approval), view approval banner, create shift vacancies, view applicants/bookings per job.
+  - **Admin**: Review & approve pending employers and job vacancies in real-time.
+- **Backend Health & Diagnostics**:
+  - Live backend health indicator (`GET /health`) in the navigation bar.
+  - Configurable API Base URL modal (`http://localhost:8000/api/v1` default).
+- **FastAPI / Pydantic Error Handling**: Formats both custom domain errors (`detail: string`) and schema validation error arrays (`detail: [{loc, msg}]`).
 
-## React Compiler
+## Getting Started
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+### 1. Install Dependencies
+```bash
+npm install
+```
 
-## Expanding the Oxlint configuration
+### 2. Start the Development Server
+```bash
+npm run dev
+```
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and Oxlint's TypeScript related rules in your project.
+The app will be available at `http://localhost:5173`.
+
+### 3. Production Build
+```bash
+npm run build
+npm run preview
+```
+
+## Quick Test Credentials
+
+The Sign-In dialog includes one-click autofill shortcuts for quick testing:
+- **Admin**: `admin@example.com` / `AdminSecurePassword123!`
+- **Student**: `student@example.com` / `Student1234!`
+- **Employer**: `employer@example.com` / `Employer1234!`
