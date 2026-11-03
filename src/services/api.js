@@ -7,7 +7,7 @@ const STORAGE_TOKEN_KEY = 'nextshift_access_token'
 const STORAGE_BASE_URL_KEY = 'nextshift_api_base_url'
 
 export const getApiBaseUrl = () => {
-  return localStorage.getItem(STORAGE_BASE_URL_KEY) || 'http://localhost:8000/api/v1'
+  return localStorage.getItem(STORAGE_BASE_URL_KEY) || 'http://172.237.81.7:8000/api/v1'
 }
 
 export const setApiBaseUrl = (url) => {
