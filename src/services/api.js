@@ -7,7 +7,7 @@ const STORAGE_TOKEN_KEY = 'nextshift_access_token'
 const STORAGE_BASE_URL_KEY = 'nextshift_api_base_url'
 
 export const getApiBaseUrl = () => {
-  return localStorage.getItem(STORAGE_BASE_URL_KEY) || 'http://172.237.81.7:8000/api/v1'
+  return localStorage.getItem(STORAGE_BASE_URL_KEY) || 'http://172.237.81.7:8080/api/v1'
 }
 
 export const setApiBaseUrl = (url) => {
@@ -122,12 +122,12 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   /**
-   * Health Check: GET http://localhost:8000/health (outside /api/v1)
+   * Health Check: GET http://localhost:8080/health (outside /api/v1)
    */
   async checkHealth() {
     const baseUrl = getApiBaseUrl().replace(/\/+$/, '')
     // Infer root from baseUrl (strip /api/v1)
-    const rootUrl = baseUrl.replace(/\/api\/v1\/?$/, '') || 'http://localhost:8000'
+    const rootUrl = baseUrl.replace(/\/api\/v1\/?$/, '') || 'http://localhost:8080'
     const res = await fetch(`${rootUrl}/health`)
     if (!res.ok) {
       throw new Error(`Health check returned status ${res.status}`)
