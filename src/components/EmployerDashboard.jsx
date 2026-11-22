@@ -55,6 +55,7 @@ const getDefaultShiftDates = () => {
 
 export default function EmployerDashboard({ showNotification }) {
   const { user } = useAuth()
+  const isApproved = user?.is_approved ?? user?.approved
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -103,7 +104,7 @@ export default function EmployerDashboard({ showNotification }) {
   }, [fetchEmployerJobs])
 
   const handleOpenCreate = () => {
-    if (!user?.is_approved) {
+    if (!isApproved) {
       showNotification('Your employer account is pending approval by an admin.', 'warning')
       return
     }
@@ -183,7 +184,7 @@ export default function EmployerDashboard({ showNotification }) {
   }
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (String(status || '').toLowerCase()) {
       case 'published':
         return 'success'
       case 'pending':
@@ -212,7 +213,7 @@ export default function EmployerDashboard({ showNotification }) {
   return (
     <Box sx={{ py: 3 }}>
       {/* Pending approval banner if unapproved */}
-      {!user?.is_approved && (
+      {!isApproved && (
         <Alert
           severity="warning"
           icon={<WarningAmberIcon fontSize="inherit" />}
@@ -249,7 +250,7 @@ export default function EmployerDashboard({ showNotification }) {
             color="primary"
             startIcon={<AddIcon />}
             onClick={handleOpenCreate}
-            disabled={!user?.is_approved}
+            disabled={!isApproved}
           >
             Post New Shift
           </Button>
@@ -272,11 +273,11 @@ export default function EmployerDashboard({ showNotification }) {
             No shift vacancies posted yet
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            {user?.is_approved
+            {isApproved
               ? 'Click "Post New Shift" to create your first campus vacancy.'
               : 'Once your employer account is approved by an admin, you can post vacancies here.'}
           </Typography>
-          {user?.is_approved && (
+          {isApproved && (
             <Button variant="contained" color="primary" onClick={handleOpenCreate} startIcon={<AddIcon />}>
               Create Shift Vacancy
             </Button>
@@ -549,17 +550,17 @@ export default function EmployerDashboard({ showNotification }) {
                     {bookings.map((b) => (
                       <TableRow key={b.id}>
                         <TableCell>#{b.id}</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>{b.student?.name || `Student #${b.student_id}`}</TableCell>
-                        <TableCell>{b.student?.email || '—'}</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>{b.student?.name || b.studentName || (b.studentId ? `Student #${b.studentId}` : `Student #${b.student_id}`)}</TableCell>
+                        <TableCell>{b.student?.email || b.studentEmail || '—'}</TableCell>
                         <TableCell>
                           <Chip
                             size="small"
                             label={b.status}
-                            color={b.status === 'confirmed' ? 'success' : 'default'}
+                            color={String(b.status).toLowerCase() === 'confirmed' ? 'success' : 'default'}
                             sx={{ textTransform: 'capitalize' }}
                           />
                         </TableCell>
-                        <TableCell>{formatDateTime(b.created_at)}</TableCell>
+                        <TableCell>{formatDateTime(b.created_at || b.createdAt)}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>

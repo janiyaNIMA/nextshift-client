@@ -1,17 +1,17 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ThemeProvider,
   CssBaseline,
   Box,
   Container,
-  Snackbar,
-  Alert,
   Typography,
   Link as MuiLink,
 } from '@mui/material'
 import { theme } from './theme'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
+import { NotificationProvider } from './context/NotificationContext'
+import { useNotification } from './context/useNotification'
 import Navbar from './components/Navbar'
 import JobsList from './components/JobsList'
 import StudentBookings from './components/StudentBookings'
@@ -19,43 +19,37 @@ import EmployerDashboard from './components/EmployerDashboard'
 import AdminDashboard from './components/AdminDashboard'
 import SettingsModal from './components/SettingsModal'
 import AuthLoginPage from './components/AuthLoginPage'
+import AuthModal from './components/AuthModal'
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth()
+  const { showNotification } = useNotification()
   const [currentTab, setCurrentTab] = useState('jobs')
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
-  // Centralized notifications
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'info', // 'success' | 'error' | 'warning' | 'info'
-  })
-
-  const showNotification = (message, severity = 'info') => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-    })
-  }
-
-  const handleCloseSnackbar = (_, reason) => {
-    if (reason === 'clickaway') return
-    setSnackbar((prev) => ({ ...prev, open: false }))
-  }
+  // Auto-switch to appropriate dashboard tab upon login if user role changes
+  useEffect(() => {
+    if (user?.role) {
+      const role = (user.role || '').toLowerCase()
+      if (role === 'admin') setCurrentTab('admin')
+      else if (role === 'employer') setCurrentTab('employer')
+      else setCurrentTab('jobs')
+    }
+  }, [user?.role])
 
   // Adjust tab automatically if unauthorized
   const handleTabChange = (newTab) => {
-    if (newTab === 'my-bookings' && (!isAuthenticated || user?.role !== 'student')) {
+    const role = (user?.role || '').toLowerCase()
+    if (newTab === 'my-bookings' && (!isAuthenticated || role !== 'student')) {
       showNotification('Please sign in as a student to view your bookings', 'warning')
       return
     }
-    if (newTab === 'employer' && (!isAuthenticated || user?.role !== 'employer')) {
+    if (newTab === 'employer' && (!isAuthenticated || role !== 'employer')) {
       showNotification('Please sign in as an employer to access employer hub', 'warning')
       return
     }
-    if (newTab === 'admin' && (!isAuthenticated || user?.role !== 'admin')) {
+    if (newTab === 'admin' && (!isAuthenticated || role !== 'admin')) {
       showNotification('Please sign in with administrator credentials', 'warning')
       return
     }
@@ -125,17 +119,12 @@ function MainContent() {
         onClose={() => setSettingsModalOpen(false)}
       />
 
-      {/* Notification Toast */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, boxShadow: 3 }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {/* Auth Modal */}
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccessNotification={showNotification}
+      />
     </Box>
   )
 }
@@ -144,9 +133,11 @@ export default function App() {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
-      <AuthProvider>
-        <MainContent />
-      </AuthProvider>
+      <NotificationProvider>
+        <AuthProvider>
+          <MainContent />
+        </AuthProvider>
+      </NotificationProvider>
     </ThemeProvider>
   )
 }

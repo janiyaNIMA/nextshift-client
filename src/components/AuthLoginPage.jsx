@@ -1,13 +1,18 @@
-import { Box, CircularProgress, Typography } from '@mui/material'
+import { useState } from 'react'
+import { Box, Button, CircularProgress, Typography } from '@mui/material'
 import { AppProvider } from '@toolpad/core/AppProvider'
 import { SignInPage } from '@toolpad/core/SignInPage'
 import { useAuth } from '../context/useAuth'
+import { useNotification } from '../context/useNotification'
 import { theme } from '../theme'
+import AuthModal from './AuthModal'
 
 const providers = [{ id: 'credentials', name: 'Email and Password' }]
 
 export default function AuthLoginPage() {
   const { login, isLoading } = useAuth()
+  const { showError, showSuccess } = useNotification()
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   if (isLoading) {
     return (
@@ -37,42 +42,69 @@ export default function AuthLoginPage() {
         title: 'NextShift',
       }}
     >
-      <SignInPage
-        providers={providers}
-        signIn={async (provider, formData) => {
-          if (provider.id !== 'credentials') {
-            return {
-              error: 'Unsupported authentication provider.',
-              type: 'UnknownError',
+      <Box sx={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <SignInPage
+          providers={providers}
+          signIn={async (provider, formData) => {
+            if (provider.id !== 'credentials') {
+              const err = 'Unsupported authentication provider.'
+              showError(err, 'Authentication Provider Error')
+              return {
+                error: err,
+                type: 'UnknownError',
+              }
             }
-          }
 
-          const email = String(formData?.get('email') || '').trim()
-          const password = String(formData?.get('password') || '')
+            const email = String(formData?.get('email') || '').trim()
+            const password = String(formData?.get('password') || '')
 
-          if (!email || !password) {
-            return {
-              error: 'Email and password are required.',
-              type: 'CredentialsSignin',
+            if (!email || !password) {
+              const err = 'Email and password are required.'
+              showError(err, 'Missing Credentials')
+              return {
+                error: err,
+                type: 'CredentialsSignin',
+              }
             }
-          }
 
-          try {
-            await login(email, password)
-            return {}
-          } catch (err) {
-            return {
-              error: err?.message || 'Sign in failed. Please check your credentials.',
-              type: err?.type || 'CredentialsSignin',
+            try {
+              const loggedUser = await login(email, password)
+              showSuccess(`Welcome back, ${loggedUser.name}!`)
+              return {}
+            } catch (err) {
+              const errorMsg = err?.message || 'Sign in failed. Please check your credentials.'
+              showError(errorMsg, 'Login Failed')
+              return {
+                error: errorMsg,
+                type: err?.type || 'CredentialsSignin',
+              }
             }
-          }
-        }}
-        slotProps={{
-          emailField: { autoFocus: true },
-          form: { noValidate: true },
-          submitButton: { variant: 'contained', color: 'primary' },
-        }}
-      />
+          }}
+          slotProps={{
+            emailField: { autoFocus: true },
+            form: { noValidate: true },
+            submitButton: { variant: 'contained', color: 'primary' },
+          }}
+        />
+
+        <Box sx={{ pb: 6, display: 'flex', justifyContent: 'center' }}>
+          <Button
+            variant="text"
+            color="primary"
+            onClick={() => setAuthModalOpen(true)}
+            sx={{ textTransform: 'none', fontWeight: 600 }}
+          >
+            Don't have an account or want quick-fill test credentials? Click here
+          </Button>
+        </Box>
+
+        <AuthModal
+          open={authModalOpen}
+          onClose={() => setAuthModalOpen(false)}
+          onSuccessNotification={(msg) => showSuccess(msg)}
+        />
+      </Box>
     </AppProvider>
   )
 }
+

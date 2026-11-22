@@ -181,7 +181,7 @@ export default function AdminDashboard({ showNotification }) {
                     <TableCell>#{emp.id}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{emp.name}</TableCell>
                     <TableCell>{emp.email}</TableCell>
-                    <TableCell>{formatDateTime(emp.created_at)}</TableCell>
+                    <TableCell>{formatDateTime(emp.created_at || emp.createdAt)}</TableCell>
                     <TableCell>
                       <Chip label="Pending Approval" color="warning" size="small" variant="outlined" />
                     </TableCell>
@@ -228,7 +228,7 @@ export default function AdminDashboard({ showNotification }) {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Job #{job.id} • Employer #{job.employer_id}
+                          Job #{job.id} • Employer #{job.employer_id || job.employerId}
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
                           {job.title}
@@ -244,10 +244,10 @@ export default function AdminDashboard({ showNotification }) {
 
                     <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
                       <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
-                        Rate: ${job.pay_amount?.toFixed(2)} / {job.pay_unit?.replace('_', ' ')}
+                        Rate: ${Number(job.pay_amount ?? job.payAmount ?? 0).toFixed(2)} / {(job.pay_unit || job.payUnit || '').replace('_', ' ')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Schedule: {formatDateTime(job.starts_at)} – {formatDateTime(job.ends_at)}
+                        Schedule: {formatDateTime(job.starts_at || job.startsAt)} – {formatDateTime(job.ends_at || job.endsAt)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Capacity: {job.capacity} students required

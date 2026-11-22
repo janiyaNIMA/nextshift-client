@@ -37,7 +37,7 @@ export default function SettingsModal({ open, onClose }) {
       if (ok) {
         setFeedback({ type: 'success', message: 'Successfully connected to backend /health!' })
       } else {
-        setFeedback({ type: 'error', message: 'Backend unreachable. Make sure uvicorn is running on port 8000.' })
+        setFeedback({ type: 'error', message: 'Backend unreachable. Make sure Spring Boot backend is running on port 8080.' })
       }
     } finally {
       setIsChecking(false)
@@ -45,7 +45,7 @@ export default function SettingsModal({ open, onClose }) {
   }
 
   const handleReset = () => {
-    const defaultUrl = 'http://localhost:8000/api/v1'
+    const defaultUrl = 'http://localhost:8080/api/v1'
     setUrlInput(defaultUrl)
     changeApiUrl(defaultUrl)
     setFeedback({ type: 'info', message: 'Reset to default API URL.' })

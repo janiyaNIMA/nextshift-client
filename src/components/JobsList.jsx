@@ -34,6 +34,7 @@ import { useAuth } from '../context/useAuth'
 
 export default function JobsList({ onOpenAuth, showNotification }) {
   const { user, isAuthenticated } = useAuth()
+  const userRole = (user?.role || '').toLowerCase()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -74,7 +75,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
       return
     }
 
-    if (user?.role !== 'student') {
+    if (userRole !== 'student') {
       showNotification('Only students can book shifts', 'warning')
       return
     }
@@ -344,7 +345,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                       View Details
                     </Button>
 
-                    {user?.role === 'student' ? (
+                    {userRole === 'student' ? (
                       <Button
                         variant="contained"
                         size="small"
@@ -453,7 +454,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
               Close
             </Button>
 
-            {user?.role === 'student' && (
+            {userRole === 'student' && (
               <Button
                 variant="contained"
                 color="primary"

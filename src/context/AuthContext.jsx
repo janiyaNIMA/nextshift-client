@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { AuthContext } from './authContextBase'
-import { api, getToken, setToken, removeToken, getApiBaseUrl, setApiBaseUrl } from '../services/api'
+import { api, getToken, setToken, removeToken, getApiBaseUrl, setApiBaseUrl, normalizeUser } from '../services/api'
 
 export function AuthProvider({ children }) {
   const [token, setTokenState] = useState(getToken())
@@ -32,7 +32,7 @@ export function AuthProvider({ children }) {
 
     try {
       const profile = await api.getMe()
-      setUser(profile)
+      setUser(normalizeUser(profile))
     } catch (err) {
       // If 401 Unauthorized, token expired or invalid
       if (err.status === 401) {
@@ -55,30 +55,25 @@ export function AuthProvider({ children }) {
 
   // Login handler
   const login = async (email, password) => {
-    setIsLoading(true)
-    try {
-      const res = await api.login(email, password)
-      setToken(res.access_token)
-      setTokenState(res.access_token)
+    const res = await api.login(email, password)
+    const authToken = res.token || res.access_token
+    setToken(authToken)
+    setTokenState(authToken)
 
-      // Fetch user info
-      const profile = await api.getMe()
-      setUser(profile)
-      return profile
-    } finally {
-      setIsLoading(false)
+    // Use user from login response or fetch via /auth/me
+    let profile = res.user
+    if (!profile) {
+      profile = await api.getMe()
     }
+    const normalized = normalizeUser(profile)
+    setUser(normalized)
+    return normalized
   }
 
   // Register handler
   const register = async ({ name, email, password, role }) => {
-    setIsLoading(true)
-    try {
-      const registeredUser = await api.register({ name, email, password, role })
-      return registeredUser
-    } finally {
-      setIsLoading(false)
-    }
+    const registeredUser = await api.register({ name, email, password, role })
+    return normalizeUser(registeredUser.user || registeredUser)
   }
 
   // Logout handler
@@ -112,3 +107,4 @@ export function AuthProvider({ children }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
+

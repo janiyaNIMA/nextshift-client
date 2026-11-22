@@ -1,21 +1,19 @@
-  # NextShift Backend API Handoff for Frontend Team
+# NextShift Backend API Handoff for Frontend Team
 
 This document is the implementation-aligned API contract for frontend integration.
 
 ## 1) Quick Start for Frontend Team
 
-- API base URL (local): `http://localhost:8000`
+- API base URL (local): `http://localhost:8080`
 - API version prefix: `/api/v1`
-- OpenAPI JSON: `/api/v1/openapi.json`
-- Swagger docs: `/docs`
 
 Final API base path for most endpoints:
 
-`http://localhost:8000/api/v1`
+`http://localhost:8080/api/v1`
 
 Health endpoint is outside the version prefix:
 
-`GET http://localhost:8000/health`
+`GET http://localhost:8080/health`
 
 ---
 

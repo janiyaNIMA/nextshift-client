@@ -104,6 +104,17 @@ export default function StudentBookings({ onBrowseJobs }) {
         <Grid container spacing={2.5}>
           {bookings.map((booking) => {
             const job = booking.job || {}
+            const title = job.title || booking.jobTitle || `Job #${booking.job_id || booking.jobId}`
+            const location = job.location || booking.jobLocation
+            const category = job.category || booking.jobCategory
+            const payAmount = job.pay_amount ?? job.payAmount ?? booking.payAmount
+            const payUnit = job.pay_unit || job.payUnit || booking.payUnit
+            const startsAt = job.starts_at || job.startsAt || booking.startsAt
+            const endsAt = job.ends_at || job.endsAt || booking.endsAt
+            const description = job.description || booking.jobDescription
+            const createdAt = booking.created_at || booking.createdAt
+            const isConfirmed = String(booking.status || 'confirmed').toLowerCase() === 'confirmed'
+
             return (
               <Grid item xs={12} md={6} key={booking.id}>
                 <Card sx={{ height: '100%', borderRadius: 3 }}>
@@ -111,53 +122,53 @@ export default function StudentBookings({ onBrowseJobs }) {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 1.5 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Booking #{booking.id} • Booked {formatDateTime(booking.created_at)}
+                          Booking #{booking.id} • Booked {formatDateTime(createdAt)}
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700, mt: 0.5 }}>
-                          {job.title || `Job #${booking.job_id}`}
+                          {title}
                         </Typography>
                       </Box>
                       <Chip
                         label={booking.status || 'confirmed'}
-                        color={booking.status === 'confirmed' ? 'success' : 'default'}
+                        color={isConfirmed ? 'success' : 'default'}
                         size="small"
                         sx={{ textTransform: 'capitalize', fontWeight: 600 }}
                       />
                     </Box>
 
-                    {job.category && (
-                      <Chip label={job.category} size="small" variant="outlined" color="primary" sx={{ mb: 2 }} />
+                    {category && (
+                      <Chip label={category} size="small" variant="outlined" color="primary" sx={{ mb: 2 }} />
                     )}
 
                     <Divider sx={{ my: 1.5 }} />
 
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                      {job.location && (
+                      {location && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <LocationOnIcon fontSize="small" color="action" />
-                          <Typography variant="body2">{job.location}</Typography>
+                          <Typography variant="body2">{location}</Typography>
                         </Box>
                       )}
 
-                      {job.pay_amount !== undefined && (
+                      {payAmount !== undefined && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <AttachMoneyIcon fontSize="small" color="success" />
                           <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
-                            ${job.pay_amount?.toFixed(2)} / {job.pay_unit?.replace('_', ' ')}
+                            ${Number(payAmount || 0).toFixed(2)} / {(payUnit || 'per_hour').replace('_', ' ')}
                           </Typography>
                         </Box>
                       )}
 
-                      {job.starts_at && job.ends_at && (
+                      {startsAt && endsAt && (
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                           <AccessTimeIcon fontSize="small" color="action" />
                           <Typography variant="body2" color="text.secondary">
-                            {formatDateTime(job.starts_at)} – {formatDateTime(job.ends_at)}
+                            {formatDateTime(startsAt)} – {formatDateTime(endsAt)}
                           </Typography>
                         </Box>
                       )}
 
-                      {job.description && (
+                      {description && (
                         <Typography
                           variant="caption"
                           color="text.secondary"
@@ -170,7 +181,7 @@ export default function StudentBookings({ onBrowseJobs }) {
                             display: 'block',
                           }}
                         >
-                          {job.description}
+                          {description}
                         </Typography>
                       )}
                     </Box>

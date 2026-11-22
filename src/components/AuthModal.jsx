@@ -25,9 +25,11 @@ import SchoolIcon from '@mui/icons-material/School'
 import BusinessIcon from '@mui/icons-material/Business'
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
 import { useAuth } from '../context/useAuth'
+import { useNotification } from '../context/useNotification'
 
 export default function AuthModal({ open, onClose, onSuccessNotification }) {
   const { login, register } = useAuth()
+  const { showError, showSuccess } = useNotification()
   const [tabIndex, setTabIndex] = useState(0) // 0: Login, 1: Register
 
   // Login form state
@@ -50,7 +52,7 @@ export default function AuthModal({ open, onClose, onSuccessNotification }) {
 
   const handleQuickFill = (role) => {
     if (role === 'admin') {
-      setLoginEmail('admin@example.com')
+      setLoginEmail('admin@unishift.com')
       setLoginPassword('AdminSecurePassword123!')
     } else if (role === 'student') {
       setLoginEmail('student@example.com')
@@ -67,10 +69,14 @@ export default function AuthModal({ open, onClose, onSuccessNotification }) {
     setLoading(true)
     try {
       const user = await login(loginEmail, loginPassword)
-      onSuccessNotification(`Welcome back, ${user.name}! (${user.role})`)
+      const successMsg = `Welcome back, ${user.name}! (${user.role})`
+      if (onSuccessNotification) onSuccessNotification(successMsg)
+      else showSuccess(successMsg)
       onClose()
     } catch (err) {
-      setErrorMessage(err.message || 'Login failed')
+      const errorMsg = err.message || 'Login failed'
+      setErrorMessage(errorMsg)
+      showError(errorMsg, 'Login Failed')
     } finally {
       setLoading(false)
     }
@@ -102,7 +108,9 @@ export default function AuthModal({ open, onClose, onSuccessNotification }) {
         setLoginEmail(regEmail)
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Registration failed')
+      const errorMsg = err.message || 'Registration failed'
+      setErrorMessage(errorMsg)
+      showError(errorMsg, 'Registration Failed')
     } finally {
       setLoading(false)
     }
