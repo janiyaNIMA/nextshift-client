@@ -56,24 +56,21 @@ export function AuthProvider({ children }) {
   // Login handler
   const login = async (email, password) => {
     const res = await api.login(email, password)
-    const authToken = res.token || res.access_token
-    setToken(authToken)
-    setTokenState(authToken)
+    const tokenVal = res.access_token || res.token
+    setToken(tokenVal)
+    setTokenState(tokenVal)
 
-    // Use user from login response or fetch via /auth/me
-    let profile = res.user
-    if (!profile) {
-      profile = await api.getMe()
-    }
-    const normalized = normalizeUser(profile)
-    setUser(normalized)
-    return normalized
+    // Use profile from response or fetch /auth/me
+    const profile = res.user ? normalizeUser(res.user) : normalizeUser(await api.getMe())
+    setUser(profile)
+    return profile
   }
 
   // Register handler
   const register = async ({ name, email, password, role }) => {
-    const registeredUser = await api.register({ name, email, password, role })
-    return normalizeUser(registeredUser.user || registeredUser)
+    const registeredData = await api.register({ name, email, password, role })
+    const rawUser = registeredData.user || registeredData
+    return normalizeUser(rawUser)
   }
 
   // Logout handler
@@ -86,7 +83,7 @@ export function AuthProvider({ children }) {
   // Update API URL
   const changeApiUrl = (newUrl) => {
     setApiBaseUrl(newUrl)
-    setApiUrlState(newUrl)
+    setApiUrlState(getApiBaseUrl())
     checkHealth()
   }
 
@@ -107,4 +104,3 @@ export function AuthProvider({ children }) {
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }
-

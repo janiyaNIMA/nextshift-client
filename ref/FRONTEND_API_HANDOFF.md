@@ -4,16 +4,39 @@ This document is the implementation-aligned API contract for frontend integratio
 
 ## 1) Quick Start for Frontend Team
 
-- API base URL (local): `http://localhost:8080`
+- Backend origin (local): `http://localhost:8080`
 - API version prefix: `/api/v1`
 
-Final API base path for most endpoints:
+Full API URL prefix for versioned endpoints:
 
 `http://localhost:8080/api/v1`
 
 Health endpoint is outside the version prefix:
 
 `GET http://localhost:8080/health`
+
+### NextShift Client URL Configuration
+
+In this client project, set `API_BASE_URL` near the top of `vite.config.js` to the backend origin only, without `/api/v1` or a trailing slash. For example:
+
+```js
+const API_BASE_URL = 'http://localhost:8080'
+```
+
+`API_BASE_URL` is the shared backend URL for all client service requests. `src/services/api.js` resolves it through `getApiBaseUrl()` and uses it for authentication, jobs, bookings, employer, and admin operations. Versioned service requests append `/api/v1`; the health check uses `/health` directly on the backend origin:
+
+| Request | Resolved URL |
+| --- | --- |
+| Login | `${API_BASE_URL}/api/v1/auth/login` |
+| Jobs | `${API_BASE_URL}/api/v1/jobs` |
+| Student bookings | `${API_BASE_URL}/api/v1/bookings/me` |
+| Health check | `${API_BASE_URL}/health` |
+
+Service components should call the shared API client rather than hardcoding a backend hostname or issuing requests to a separate backend URL. The Vite development proxy target is derived from `API_BASE_URL`. Restart the Vite server after changing the value.
+
+The settings dialog can save a browser-specific backend origin override. It is stored in local storage as `nextshift_api_base_url` and takes precedence over `API_BASE_URL` until **Reset to Default** is selected. Previously saved URLs ending in `/api/v1` are normalized by the client.
+
+When the browser calls a backend on a different origin, the backend must allow the client origin in its CORS configuration.
 
 ---
 
@@ -461,7 +484,7 @@ All paths below are relative to `/api/v1` unless otherwise noted.
 
 ## 8) Frontend Implementation Notes
 
-- Save JWT token securely in frontend state/storage per your security policy.
+- In this client, the JWT is stored in browser local storage under `nextshift_access_token`.
 - Attach `Authorization` header for all protected calls.
 - Treat `401` as session/auth failure (redirect to login).
 - Treat `403` as permission/approval issue (show role-appropriate message).

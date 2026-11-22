@@ -34,7 +34,6 @@ import { useAuth } from '../context/useAuth'
 
 export default function JobsList({ onOpenAuth, showNotification }) {
   const { user, isAuthenticated } = useAuth()
-  const userRole = (user?.role || '').toLowerCase()
   const [jobs, setJobs] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
@@ -57,7 +56,8 @@ export default function JobsList({ onOpenAuth, showNotification }) {
         location: locationFilter.trim() || undefined,
         limit: 50,
       })
-      setJobs(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : (data?.content || [])
+      setJobs(items)
     } catch (err) {
       setError(err.message || 'Failed to load shifts')
     } finally {
@@ -75,7 +75,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
       return
     }
 
-    if (userRole !== 'student') {
+    if (user?.role?.toLowerCase() !== 'student') {
       showNotification('Only students can book shifts', 'warning')
       return
     }
@@ -137,7 +137,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
       </Box>
 
       {/* Filter and Search Bar */}
-      <Paper sx={{ p: 2, mb: 4, borderRadius: 3, border: '1px solid #e2e8f0' }} elevation={0}>
+      <Paper sx={{ p: 2, mb: 4, borderRadius: 3, border: 1, borderColor: 'divider' }} elevation={0}>
         <Grid container spacing={2} alignItems="center">
           <Grid item xs={12} sm={4}>
             <TextField
@@ -224,7 +224,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
         </Box>
       ) : filteredJobs.length === 0 ? (
         /* Empty State */
-        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: '#f8fafc' }} elevation={0}>
+        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'action.hover' }} elevation={0}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No published shifts found
           </Typography>
@@ -293,7 +293,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                       sx={{
                         p: 1.5,
                         borderRadius: 2,
-                        bgcolor: '#f1f5f9',
+                        bgcolor: 'action.hover',
                         mb: 2,
                         display: 'flex',
                         flexDirection: 'column',
@@ -302,7 +302,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                     >
                       <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                         <AttachMoneyIcon fontSize="small" color="success" />
-                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.dark' }}>
+                        <Typography variant="body2" sx={{ fontWeight: 700, color: 'success.main' }}>
                           ${job.pay_amount?.toFixed(2)} / {job.pay_unit?.replace('_', ' ')}
                         </Typography>
                       </Box>
@@ -345,7 +345,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                       View Details
                     </Button>
 
-                    {userRole === 'student' ? (
+                    {user?.role?.toLowerCase() === 'student' ? (
                       <Button
                         variant="contained"
                         size="small"
@@ -396,7 +396,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
               <Chip
                 label={`Status: ${selectedJob.status}`}
                 size="small"
-                color={selectedJob.status === 'published' ? 'success' : 'default'}
+                color={selectedJob.status?.toLowerCase() === 'published' ? 'success' : 'default'}
               />
             </Stack>
           </DialogTitle>
@@ -418,7 +418,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                   <Typography variant="caption" color="text.secondary">
                     Compensation
                   </Typography>
-                  <Typography variant="body1" sx={{ fontWeight: 700, color: 'success.dark' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 700, color: 'success.main' }}>
                     ${selectedJob.pay_amount?.toFixed(2)} / {selectedJob.pay_unit?.replace('_', ' ')}
                   </Typography>
                 </Paper>
@@ -454,7 +454,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
               Close
             </Button>
 
-            {userRole === 'student' && (
+            {user?.role?.toLowerCase() === 'student' && (
               <Button
                 variant="contained"
                 color="primary"

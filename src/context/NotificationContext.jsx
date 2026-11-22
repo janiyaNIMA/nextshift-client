@@ -1,186 +1,260 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useMemo } from 'react'
 import {
   Snackbar,
   Alert,
   AlertTitle,
+  Slide,
+  IconButton,
   Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   Button,
-  Slide,
-  Box,
   Typography,
+  Box,
+  Stack,
 } from '@mui/material'
-import ErrorOutlineRoundedIcon from '@mui/icons-material/ErrorOutlineRounded'
+import CloseIcon from '@mui/icons-material/Close'
+import ErrorOutlinedIcon from '@mui/icons-material/ErrorOutlined'
 import { NotificationContext } from './notificationContextBase'
 
 function SlideTransition(props) {
-  return <Slide {...props} direction="down" />
+  return <Slide {...props} direction="left" />
 }
 
 export function NotificationProvider({ children }) {
-  // Toast / Snackbar popup state
-  const [toast, setToast] = useState({
+  // Snackbar Toast State
+  const [snackbar, setSnackbar] = useState({
     open: false,
     message: '',
+    severity: 'info', // 'error' | 'warning' | 'info' | 'success'
     title: '',
-    severity: 'info', // 'error' | 'success' | 'warning' | 'info'
-    autoHideDuration: 5000,
+    duration: 6000,
   })
 
-  // Modal Dialog popup state (for critical or explicit dialog popups)
-  const [dialog, setDialog] = useState({
+  // Modal Error Popup Dialog State
+  const [errorDialog, setErrorDialog] = useState({
     open: false,
     title: '',
     message: '',
     details: '',
+    actionLabel: '',
+    onAction: null,
   })
 
-  const showNotification = useCallback((message, severity = 'info', title = '') => {
-    setToast({
-      open: true,
-      message: typeof message === 'string' ? message : String(message || 'An event occurred'),
-      title,
-      severity,
-      autoHideDuration: severity === 'error' ? 6000 : 4000,
-    })
-  }, [])
-
-  const showError = useCallback((message, title = 'Error') => {
-    showNotification(message, 'error', title)
-  }, [showNotification])
-
-  const showSuccess = useCallback((message, title = '') => {
-    showNotification(message, 'success', title)
-  }, [showNotification])
-
-  const showWarning = useCallback((message, title = '') => {
-    showNotification(message, 'warning', title)
-  }, [showNotification])
-
-  const showInfo = useCallback((message, title = '') => {
-    showNotification(message, 'info', title)
-  }, [showNotification])
-
-  const showErrorDialog = useCallback(({ title = 'Error Occurred', message, details = '' }) => {
-    setDialog({
-      open: true,
-      title,
-      message: typeof message === 'string' ? message : String(message || 'An unexpected error occurred'),
-      details,
-    })
-  }, [])
-
-  const handleCloseToast = useCallback((_, reason) => {
+  // Dismiss snackbar
+  const closeNotification = useCallback((_, reason) => {
     if (reason === 'clickaway') return
-    setToast((prev) => ({ ...prev, open: false }))
+    setSnackbar((prev) => ({ ...prev, open: false }))
   }, [])
 
-  const handleCloseDialog = useCallback(() => {
-    setDialog((prev) => ({ ...prev, open: false }))
+  // Show standard notification toast
+  const showNotification = useCallback((message, severity = 'info', options = {}) => {
+    setSnackbar({
+      open: true,
+      message: String(message || 'An event occurred'),
+      severity,
+      title: options.title || '',
+      duration: options.duration !== undefined ? options.duration : 6000,
+    })
   }, [])
 
-  const value = {
+  // Quick severity helpers
+  const showError = useCallback((message, options = {}) => {
+    showNotification(message, 'error', {
+      title: options.title || 'Error',
+      duration: options.duration || 7000,
+      ...options,
+    })
+  }, [showNotification])
+
+  const showSuccess = useCallback((message, options = {}) => {
+    showNotification(message, 'success', {
+      title: options.title || 'Success',
+      duration: options.duration || 4500,
+      ...options,
+    })
+  }, [showNotification])
+
+  const showWarning = useCallback((message, options = {}) => {
+    showNotification(message, 'warning', {
+      title: options.title || 'Warning',
+      duration: options.duration || 5500,
+      ...options,
+    })
+  }, [showNotification])
+
+  const showInfo = useCallback((message, options = {}) => {
+    showNotification(message, 'info', {
+      title: options.title || '',
+      duration: options.duration || 5000,
+      ...options,
+    })
+  }, [showNotification])
+
+  // Show prominent modal Error Dialog popup
+  const showErrorDialog = useCallback(({ title = 'Application Error', message, details = '', actionLabel = 'OK', onAction = null }) => {
+    setErrorDialog({
+      open: true,
+      title,
+      message: String(message || 'An unexpected error occurred.'),
+      details: typeof details === 'object' ? JSON.stringify(details, null, 2) : String(details || ''),
+      actionLabel,
+      onAction,
+    })
+  }, [])
+
+  const closeErrorDialog = useCallback(() => {
+    setErrorDialog((prev) => ({ ...prev, open: false }))
+  }, [])
+
+  const contextValue = useMemo(() => ({
     showNotification,
     showError,
     showSuccess,
     showWarning,
     showInfo,
     showErrorDialog,
-  }
+    closeNotification,
+    closeErrorDialog,
+  }), [
+    showNotification,
+    showError,
+    showSuccess,
+    showWarning,
+    showInfo,
+    showErrorDialog,
+    closeNotification,
+    closeErrorDialog,
+  ])
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider value={contextValue}>
       {children}
 
-      {/* Floating MUI Snackbar Popup Alert */}
+      {/* Floating MUI Snackbar Alert Popup */}
       <Snackbar
-        open={toast.open}
-        autoHideDuration={toast.autoHideDuration}
-        onClose={handleCloseToast}
-        anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        slots={{ transition: SlideTransition }}
+        open={snackbar.open}
+        autoHideDuration={snackbar.duration}
+        onClose={closeNotification}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        TransitionComponent={SlideTransition}
         sx={{
-          top: { xs: 16, sm: 24 },
+          mt: 2,
+          mr: 1,
+          maxWidth: { xs: '92vw', sm: 460 },
           zIndex: (theme) => theme.zIndex.snackbar + 100,
         }}
       >
         <Alert
-          onClose={handleCloseToast}
-          severity={toast.severity}
+          onClose={closeNotification}
+          severity={snackbar.severity}
           variant="filled"
-          elevation={6}
-          sx={{
-            minWidth: { xs: '90vw', sm: 380 },
-            maxWidth: 600,
-            borderRadius: 2.5,
-            boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.25), 0 8px 10px -6px rgba(0, 0, 0, 0.2)',
-            fontSize: '0.95rem',
-            alignItems: 'center',
+          sx={(theme) => ({
+            width: '100%',
+            borderRadius: `${theme.shape.borderRadius}px`,
+            boxShadow: theme.palette.mode === 'highContrast'
+              ? 'none'
+              : '0 8px 32px rgba(0, 0, 0, 0.24)',
+            border: theme.palette.mode === 'highContrast'
+              ? '2px solid #ffffff'
+              : undefined,
             '& .MuiAlert-icon': {
-              fontSize: '1.6rem',
-              alignSelf: 'center',
+              fontSize: '1.4rem',
+              alignSelf: snackbar.title ? 'flex-start' : 'center',
+              mt: snackbar.title ? 0.3 : 0,
             },
-          }}
+          })}
         >
-          {toast.title && <AlertTitle sx={{ fontWeight: 700, mb: 0.3 }}>{toast.title}</AlertTitle>}
-          {toast.message}
+          {snackbar.title && (
+            <AlertTitle sx={{ fontWeight: 700, mb: 0.5, lineHeight: 1.2 }}>
+              {snackbar.title}
+            </AlertTitle>
+          )}
+          <Typography variant="body2" sx={{ lineHeight: 1.4, wordBreak: 'break-word' }}>
+            {snackbar.message}
+          </Typography>
         </Alert>
       </Snackbar>
 
-      {/* Modal MUI Error Dialog Popup */}
+      {/* Prominent MUI Error Modal Dialog Popup */}
       <Dialog
-        open={dialog.open}
-        onClose={handleCloseDialog}
-        maxWidth="xs"
+        open={errorDialog.open}
+        onClose={closeErrorDialog}
+        maxWidth="sm"
         fullWidth
-        slotProps={{
-          paper: {
-            sx: {
-              borderRadius: 3,
-              p: 1,
-              boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.25)',
-            },
-          },
+        PaperProps={{
+          sx: (theme) => ({
+            borderRadius: `${theme.shape.borderRadius}px`,
+            p: 1,
+            border: theme.palette.mode === 'highContrast' ? '2px solid #ffffff' : undefined,
+          }),
         }}
       >
-        <Box sx={{ p: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-          <ErrorOutlineRoundedIcon color="error" sx={{ fontSize: 48, mb: 1.5 }} />
-          <Typography variant="h6" sx={{ fontWeight: 700, mb: 1 }}>
-            {dialog.title}
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: dialog.details ? 1.5 : 0 }}>
-            {dialog.message}
-          </Typography>
-          {dialog.details && (
-            <Box
-              component="pre"
-              sx={{
-                bgcolor: '#f1f5f9',
-                p: 1.5,
-                borderRadius: 1.5,
-                fontSize: '0.75rem',
-                color: '#475569',
-                maxWidth: '100%',
-                overflowX: 'auto',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word',
-                textAlign: 'left',
-                width: '100%',
-              }}
-            >
-              {dialog.details}
-            </Box>
-          )}
-        </Box>
-        <DialogActions sx={{ px: 3, pb: 2, justifyContent: 'center' }}>
+        <DialogTitle sx={{ display: 'flex', alignItems: 'center', gap: 1.5, pb: 1 }}>
+          <Box
+            sx={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              width: 40,
+              height: 40,
+              borderRadius: '50%',
+              bgcolor: (theme) => `${theme.palette.error.main}1A`,
+              color: 'error.main',
+            }}
+          >
+            <ErrorOutlinedIcon fontSize="medium" />
+          </Box>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              {errorDialog.title}
+            </Typography>
+          </Box>
+          <IconButton size="small" onClick={closeErrorDialog} sx={{ color: 'text.secondary' }}>
+            <CloseIcon fontSize="small" />
+          </IconButton>
+        </DialogTitle>
+
+        <DialogContent dividers sx={{ py: 2.5 }}>
+          <Stack spacing={2}>
+            <Typography variant="body1" sx={{ color: 'text.primary', fontWeight: 500 }}>
+              {errorDialog.message}
+            </Typography>
+
+            {errorDialog.details && (
+              <Box
+                component="pre"
+                sx={(theme) => ({
+                  p: 1.5,
+                  borderRadius: 1.5,
+                  bgcolor: theme.palette.background.subtle || 'action.hover',
+                  color: 'text.secondary',
+                  fontSize: '0.8rem',
+                  overflowX: 'auto',
+                  border: 1,
+                  borderColor: 'divider',
+                  fontFamily: 'monospace',
+                })}
+              >
+                {errorDialog.details}
+              </Box>
+            )}
+          </Stack>
+        </DialogContent>
+
+        <DialogActions sx={{ px: 3, py: 2 }}>
           <Button
-            onClick={handleCloseDialog}
             variant="contained"
             color="primary"
-            fullWidth
-            sx={{ borderRadius: 2, py: 1 }}
+            onClick={() => {
+              if (errorDialog.onAction) {
+                errorDialog.onAction()
+              }
+              closeErrorDialog()
+            }}
           >
-            Understood
+            {errorDialog.actionLabel || 'OK'}
           </Button>
         </DialogActions>
       </Dialog>

@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Dialog,
   DialogTitle,
@@ -13,16 +13,29 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormControl,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import ContrastIcon from '@mui/icons-material/Contrast'
 import { useAuth } from '../context/useAuth'
+import { useThemeMode } from '../context/useTheme'
 
 export default function SettingsModal({ open, onClose }) {
   const { apiUrl, changeApiUrl, healthStatus, checkHealth, token } = useAuth()
+  const { mode, setMode } = useThemeMode()
   const [urlInput, setUrlInput] = useState(apiUrl)
   const [isChecking, setIsChecking] = useState(false)
   const [feedback, setFeedback] = useState(null)
+
+  useEffect(() => {
+    setUrlInput(apiUrl)
+  }, [apiUrl, open])
 
   const handleSave = () => {
     changeApiUrl(urlInput.trim())
@@ -37,7 +50,7 @@ export default function SettingsModal({ open, onClose }) {
       if (ok) {
         setFeedback({ type: 'success', message: 'Successfully connected to backend /health!' })
       } else {
-        setFeedback({ type: 'error', message: 'Backend unreachable. Make sure Spring Boot backend is running on port 8080.' })
+        setFeedback({ type: 'error', message: 'Backend unreachable. Make sure backend is running on port 8080.' })
       }
     } finally {
       setIsChecking(false)
@@ -45,7 +58,7 @@ export default function SettingsModal({ open, onClose }) {
   }
 
   const handleReset = () => {
-    const defaultUrl = 'http://localhost:8080/api/v1'
+    const defaultUrl = import.meta.env.VITE_API_BASE_URL
     setUrlInput(defaultUrl)
     changeApiUrl(defaultUrl)
     setFeedback({ type: 'info', message: 'Reset to default API URL.' })
@@ -86,19 +99,91 @@ export default function SettingsModal({ open, onClose }) {
 
           <Divider />
 
+          {/* Theme & Visual Display Section */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Theme & Display Mode
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Theme preferences are stored in secure browser cookies per account across sessions.
+            </Typography>
+
+            <FormControl component="fieldset" fullWidth>
+              <RadioGroup
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+                sx={{ gap: 1 }}
+              >
+                <FormControlLabel
+                  value="light"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LightModeIcon fontSize="small" color="primary" />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Light Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Clean campus marketplace slate palette (WCAG AA)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="dark"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DarkModeIcon fontSize="small" color="primary" />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Dark Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Deep midnight slate palette for low-light environments
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="highContrast"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ContrastIcon fontSize="small" sx={{ color: '#facc15' }} />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          High Contrast Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Pitch black with 21:1 luminance & safety gold accents (WCAG 2.1 AAA)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
+          </Box>
+
+          <Divider />
+
           <Box>
             <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
               API Base URL
             </Typography>
             <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
-              Endpoints will be requested relative to this base path.
+              API requests use /api/v1 under this URL; health checks use /health.
             </Typography>
             <TextField
               fullWidth
               size="small"
               value={urlInput}
               onChange={(e) => setUrlInput(e.target.value)}
-              placeholder="http://localhost:8000/api/v1"
+              placeholder={import.meta.env.VITE_API_BASE_URL}
             />
             <Stack direction="row" spacing={1} sx={{ mt: 1 }}>
               <Button variant="contained" size="small" onClick={handleSave}>

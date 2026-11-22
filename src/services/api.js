@@ -5,17 +5,24 @@
 
 const STORAGE_TOKEN_KEY = 'nextshift_access_token'
 const STORAGE_BASE_URL_KEY = 'nextshift_api_base_url'
+const API_PATH_PREFIX = '/api/v1'
+
+const normalizeApiBaseUrl = (url) => url
+  .trim()
+  .replace(/\/api\/v1\/?$/i, '')
+  .replace(/\/+$/, '')
 
 export const getApiBaseUrl = () => {
   const stored = localStorage.getItem(STORAGE_BASE_URL_KEY)
-  if (stored && !stored.includes('172.237.81.7') && !stored.includes(':8000')) {
-    return stored
+  const baseUrl = normalizeApiBaseUrl(stored || import.meta.env.VITE_API_BASE_URL)
+  if (stored && stored !== baseUrl) {
+    localStorage.setItem(STORAGE_BASE_URL_KEY, baseUrl)
   }
-  return 'http://localhost:8080/api/v1'
+  return baseUrl
 }
 
 export const setApiBaseUrl = (url) => {
-  localStorage.setItem(STORAGE_BASE_URL_KEY, url)
+  localStorage.setItem(STORAGE_BASE_URL_KEY, normalizeApiBaseUrl(url))
 }
 
 export const getToken = () => {
@@ -188,6 +195,12 @@ export const formatErrorMessage = (errorData, status) => {
       .join(' | ')
   }
 
+  if (errorData.details && typeof errorData.details === 'object' && Object.keys(errorData.details).length > 0) {
+    return Object.entries(errorData.details)
+      .map(([field, msg]) => `${field}: ${msg}`)
+      .join(' | ')
+  }
+
   if (typeof errorData.detail === 'string') {
     return errorData.detail
   }
@@ -203,10 +216,11 @@ export const formatErrorMessage = (errorData, status) => {
  * Generic request helper
  */
 async function request(endpoint, options = {}) {
-  const baseUrl = getApiBaseUrl().replace(/\/+$/, '')
+  const baseUrl = getApiBaseUrl()
+  const apiEndpoint = endpoint.replace(/^\/?api\/v1(?=\/|$)/i, '')
   const url = endpoint.startsWith('http')
     ? endpoint
-    : `${baseUrl}${endpoint.startsWith('/') ? endpoint : `/${endpoint}`}`
+    : `${baseUrl}${API_PATH_PREFIX}${apiEndpoint.startsWith('/') ? apiEndpoint : `/${apiEndpoint}`}`
 
   const headers = {
     'Content-Type': 'application/json',
@@ -225,7 +239,10 @@ async function request(endpoint, options = {}) {
       headers,
     })
   } catch (err) {
-    throw new Error(`Network error: Could not connect to API server (${url}). ${err.message}`)
+    if (err.message && err.message.toLowerCase().includes('failed to fetch')) {
+      throw new Error(`Unable to connect to NextShift API at ${url}. Please ensure the backend server is running on port 8080.`)
+    }
+    throw new Error(`Network error connecting to API (${url}): ${err.message}`)
   }
 
   if (response.status === 204) {
@@ -263,12 +280,11 @@ async function request(endpoint, options = {}) {
 
 export const api = {
   /**
-   * Health Check: GET http://localhost:8080/health
+   * Health check at the backend root (outside /api/v1)
    */
   async checkHealth() {
-    const baseUrl = getApiBaseUrl().replace(/\/+$/, '')
-    const rootUrl = baseUrl.replace(/\/api\/v1\/?$/, '') || 'http://localhost:8080'
-    const res = await fetch(`${rootUrl}/health`)
+    const baseUrl = getApiBaseUrl()
+    const res = await fetch(`${baseUrl}/health`)
     if (!res.ok) {
       throw new Error(`Health check returned status ${res.status}`)
     }

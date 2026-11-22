@@ -7,9 +7,10 @@ import {
   Typography,
   Link as MuiLink,
 } from '@mui/material'
-import { theme } from './theme'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
+import { ThemeContextProvider } from './context/ThemeContext'
+import { useThemeMode } from './context/useTheme'
 import { NotificationProvider } from './context/NotificationContext'
 import { useNotification } from './context/useNotification'
 import Navbar from './components/Navbar'
@@ -23,24 +24,28 @@ import AuthModal from './components/AuthModal'
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth()
-  const { showNotification } = useNotification()
   const [currentTab, setCurrentTab] = useState('jobs')
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const { showNotification } = useNotification()
 
-  // Auto-switch to appropriate dashboard tab upon login if user role changes
+  // Automatically redirect user to their role-specific dashboard upon login or role change
   useEffect(() => {
     if (user?.role) {
-      const role = (user.role || '').toLowerCase()
-      if (role === 'admin') setCurrentTab('admin')
-      else if (role === 'employer') setCurrentTab('employer')
-      else setCurrentTab('jobs')
+      const role = user.role.toLowerCase()
+      if (role === 'admin') {
+        setCurrentTab('admin')
+      } else if (role === 'employer') {
+        setCurrentTab('employer')
+      } else if (role === 'student') {
+        setCurrentTab('jobs')
+      }
     }
-  }, [user?.role])
+  }, [user?.role, user?.id])
 
   // Adjust tab automatically if unauthorized
   const handleTabChange = (newTab) => {
-    const role = (user?.role || '').toLowerCase()
+    const role = user?.role?.toLowerCase()
     if (newTab === 'my-bookings' && (!isAuthenticated || role !== 'student')) {
       showNotification('Please sign in as a student to view your bookings', 'warning')
       return
@@ -65,7 +70,7 @@ function MainContent() {
       <Navbar
         currentTab={currentTab}
         onTabChange={handleTabChange}
-        onOpenAuth={() => {}}
+        onOpenAuth={() => setAuthModalOpen(true)}
         onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
@@ -100,8 +105,9 @@ function MainContent() {
           py: 3,
           px: 2,
           mt: 'auto',
-          borderTop: '1px solid #e2e8f0',
-          bgcolor: 'white',
+          borderTop: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
           textAlign: 'center',
         }}
       >
@@ -119,7 +125,7 @@ function MainContent() {
         onClose={() => setSettingsModalOpen(false)}
       />
 
-      {/* Auth Modal */}
+      {/* Auth Modal (Sign In / Register) */}
       <AuthModal
         open={authModalOpen}
         onClose={() => setAuthModalOpen(false)}
@@ -129,15 +135,25 @@ function MainContent() {
   )
 }
 
-export default function App() {
+function ThemedApp() {
+  const { theme } = useThemeMode()
+
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />
       <NotificationProvider>
-        <AuthProvider>
-          <MainContent />
-        </AuthProvider>
+        <MainContent />
       </NotificationProvider>
     </ThemeProvider>
+  )
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <ThemeContextProvider>
+        <ThemedApp />
+      </ThemeContextProvider>
+    </AuthProvider>
   )
 }

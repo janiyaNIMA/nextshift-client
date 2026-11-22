@@ -153,7 +153,7 @@ export default function AdminDashboard({ showNotification }) {
       ) : activeTab === 0 ? (
         // ================= TAB 0: PENDING EMPLOYERS =================
         pendingEmployers.length === 0 ? (
-          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: '#f8fafc' }} elevation={0}>
+          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'action.hover' }} elevation={0}>
             <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No pending employer approvals
@@ -163,9 +163,9 @@ export default function AdminDashboard({ showNotification }) {
             </Typography>
           </Paper>
         ) : (
-          <TableContainer component={Paper} sx={{ borderRadius: 3, border: '1px solid #e2e8f0' }} elevation={0}>
+          <TableContainer component={Paper} sx={{ borderRadius: 3, border: 1, borderColor: 'divider' }} elevation={0}>
             <Table>
-              <TableHead sx={{ bgcolor: '#f8fafc' }}>
+              <TableHead sx={{ bgcolor: 'action.hover' }}>
                 <TableRow>
                   <TableCell sx={{ fontWeight: 700 }}>Employer ID</TableCell>
                   <TableCell sx={{ fontWeight: 700 }}>Full Name</TableCell>
@@ -181,7 +181,7 @@ export default function AdminDashboard({ showNotification }) {
                     <TableCell>#{emp.id}</TableCell>
                     <TableCell sx={{ fontWeight: 600 }}>{emp.name}</TableCell>
                     <TableCell>{emp.email}</TableCell>
-                    <TableCell>{formatDateTime(emp.created_at || emp.createdAt)}</TableCell>
+                    <TableCell>{formatDateTime(emp.created_at)}</TableCell>
                     <TableCell>
                       <Chip label="Pending Approval" color="warning" size="small" variant="outlined" />
                     </TableCell>
@@ -210,7 +210,7 @@ export default function AdminDashboard({ showNotification }) {
       ) : (
         // ================= TAB 1: PENDING JOBS =================
         pendingJobs.length === 0 ? (
-          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: '#f8fafc' }} elevation={0}>
+          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'action.hover' }} elevation={0}>
             <CheckCircleIcon sx={{ fontSize: 48, color: 'success.main', mb: 1 }} />
             <Typography variant="h6" color="text.secondary" gutterBottom>
               No pending shifts to review
@@ -228,7 +228,7 @@ export default function AdminDashboard({ showNotification }) {
                     <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 1 }}>
                       <Box>
                         <Typography variant="caption" color="text.secondary">
-                          Job #{job.id} • Employer #{job.employer_id || job.employerId}
+                          Job #{job.id} • Employer #{job.employer_id}
                         </Typography>
                         <Typography variant="h6" sx={{ fontWeight: 700 }}>
                           {job.title}
@@ -242,12 +242,12 @@ export default function AdminDashboard({ showNotification }) {
                       <Chip label={job.location} size="small" variant="outlined" />
                     </Stack>
 
-                    <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
-                        Rate: ${Number(job.pay_amount ?? job.payAmount ?? 0).toFixed(2)} / {(job.pay_unit || job.payUnit || '').replace('_', ' ')}
+                    <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, mb: 2, display: 'flex', flexDirection: 'column', gap: 0.5 }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
+                        Rate: ${job.pay_amount?.toFixed(2)} / {job.pay_unit?.replace('_', ' ')}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Schedule: {formatDateTime(job.starts_at || job.startsAt)} – {formatDateTime(job.ends_at || job.endsAt)}
+                        Schedule: {formatDateTime(job.starts_at)} – {formatDateTime(job.ends_at)}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Capacity: {job.capacity} students required

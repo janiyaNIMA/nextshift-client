@@ -1,104 +1,76 @@
-import { createContext, useState, useEffect, useMemo, useCallback } from 'react'
-import { createNextShiftTheme } from '../theme'
-import { getCookie, setCookie, ACTIVE_THEME_COOKIE, getUserThemeCookieName } from '../utils/cookies'
+import { useState, useEffect, useMemo, useCallback } from 'react'
+import {
+  ThemeContext,
+  COOKIE_ACTIVE_THEME,
+  COOKIE_USER_THEME_PREFIX,
+  VALID_THEME_MODES,
+  getInitialThemeMode,
+} from './themeContextBase'
 import { useAuth } from './useAuth'
-
-export const ThemeContext = createContext({
-  mode: 'light',
-  setMode: () => {},
-  cycleMode: () => {},
-  theme: null,
-})
-
-export const ThemeModeContext = ThemeContext
-
-const VALID_MODES = ['light', 'dark', 'highContrast']
-
-/**
- * Determine initial theme mode from active cookie or system preference
- */
-function getInitialMode() {
-  const cookieMode = getCookie(ACTIVE_THEME_COOKIE)
-  if (cookieMode && VALID_MODES.includes(cookieMode)) {
-    return cookieMode
-  }
-
-  if (typeof window !== 'undefined' && window.matchMedia) {
-    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      return 'dark'
-    }
-  }
-
-  return 'light'
-}
+import { createNextShiftTheme } from '../theme'
+import { getCookie, setCookie } from '../utils/cookies'
 
 export function ThemeContextProvider({ children }) {
   const { user } = useAuth()
-  const [mode, setModeState] = useState(getInitialMode)
+  const [mode, setModeState] = useState(getInitialThemeMode)
 
-  // Synchronize when authenticated user changes
+  const activeUserId = user?.id
+
+  // Listen to user sign-in / profile load for per-user cookie synchronization
   useEffect(() => {
-    if (!user?.id) return
+    if (!activeUserId) return
 
-    const userCookieKey = getUserThemeCookieName(user.id)
-    const userTheme = getCookie(userCookieKey)
+    const userCookieKey = `${COOKIE_USER_THEME_PREFIX}${activeUserId}`
+    const savedUserMode = getCookie(userCookieKey)
 
-    if (userTheme && VALID_MODES.includes(userTheme)) {
-      if (userTheme !== mode) {
-        setModeState(userTheme)
-        setCookie(ACTIVE_THEME_COOKIE, userTheme)
-      }
+    if (savedUserMode && VALID_THEME_MODES.includes(savedUserMode)) {
+      setModeState((currentMode) => {
+        if (savedUserMode !== currentMode) {
+          setCookie(COOKIE_ACTIVE_THEME, savedUserMode)
+          return savedUserMode
+        }
+        return currentMode
+      })
     } else {
-      // First time this user logs in without a stored preference:
-      // Adopt current active theme as their stored preference
-      setCookie(userCookieKey, mode)
+      // First time this user logs in on this browser: initialize user cookie with active theme
+      setModeState((currentMode) => {
+        setCookie(userCookieKey, currentMode)
+        return currentMode
+      })
     }
-  }, [user?.id, mode])
+  }, [activeUserId])
 
+  // Explicit user theme selection
   const setMode = useCallback((newMode) => {
-    if (!VALID_MODES.includes(newMode)) return
+    if (!VALID_THEME_MODES.includes(newMode)) return
 
     setModeState(newMode)
-    setCookie(ACTIVE_THEME_COOKIE, newMode)
+    setCookie(COOKIE_ACTIVE_THEME, newMode)
 
-    if (user?.id) {
-      const userCookieKey = getUserThemeCookieName(user.id)
-      setCookie(userCookieKey, newMode)
+    if (activeUserId) {
+      setCookie(`${COOKIE_USER_THEME_PREFIX}${activeUserId}`, newMode)
     }
-  }, [user?.id])
+  }, [activeUserId])
 
+  // Cycle through Light -> Dark -> High Contrast -> Light
   const cycleMode = useCallback(() => {
-    setModeState((currentMode) => {
-      let nextMode = 'light'
-      if (currentMode === 'light') nextMode = 'dark'
-      else if (currentMode === 'dark') nextMode = 'highContrast'
-      else nextMode = 'light'
-
-      setCookie(ACTIVE_THEME_COOKIE, nextMode)
-      if (user?.id) {
-        const userCookieKey = getUserThemeCookieName(user.id)
-        setCookie(userCookieKey, nextMode)
-      }
-
-      return nextMode
-    })
-  }, [user?.id])
+    const cycleMap = {
+      light: 'dark',
+      dark: 'highContrast',
+      highContrast: 'light',
+    }
+    const nextMode = cycleMap[mode] || 'light'
+    setMode(nextMode)
+  }, [mode, setMode])
 
   const theme = useMemo(() => createNextShiftTheme(mode), [mode])
 
-  const value = useMemo(
-    () => ({
-      mode,
-      setMode,
-      cycleMode,
-      theme,
-    }),
-    [mode, setMode, cycleMode, theme],
-  )
+  const value = useMemo(() => ({
+    mode,
+    setMode,
+    cycleMode,
+    theme,
+  }), [mode, setMode, cycleMode, theme])
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
 }
-
-export const ThemeModeProvider = ThemeContextProvider
-
-export { useThemeMode } from './useThemeMode'
