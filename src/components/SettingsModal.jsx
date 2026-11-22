@@ -13,13 +13,22 @@ import {
   Chip,
   CircularProgress,
   Divider,
+  RadioGroup,
+  FormControlLabel,
+  Radio,
+  FormControl,
 } from '@mui/material'
 import CheckCircleIcon from '@mui/icons-material/CheckCircle'
 import ErrorIcon from '@mui/icons-material/Error'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import ContrastIcon from '@mui/icons-material/Contrast'
 import { useAuth } from '../context/useAuth'
+import { useThemeMode } from '../context/useTheme'
 
 export default function SettingsModal({ open, onClose }) {
   const { apiUrl, changeApiUrl, healthStatus, checkHealth, token } = useAuth()
+  const { mode, setMode } = useThemeMode()
   const [urlInput, setUrlInput] = useState(apiUrl)
   const [isChecking, setIsChecking] = useState(false)
   const [feedback, setFeedback] = useState(null)
@@ -82,6 +91,78 @@ export default function SettingsModal({ open, onClose }) {
                 {healthStatus.error}
               </Typography>
             )}
+          </Box>
+
+          <Divider />
+
+          {/* Theme & Visual Display Section */}
+          <Box>
+            <Typography variant="subtitle2" sx={{ fontWeight: 600, mb: 0.5 }}>
+              Theme & Display Mode
+            </Typography>
+            <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 1.5 }}>
+              Theme preferences are stored in secure browser cookies per account across sessions.
+            </Typography>
+
+            <FormControl component="fieldset" fullWidth>
+              <RadioGroup
+                value={mode}
+                onChange={(e) => setMode(e.target.value)}
+                sx={{ gap: 1 }}
+              >
+                <FormControlLabel
+                  value="light"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LightModeIcon fontSize="small" color="primary" />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Light Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Clean campus marketplace slate palette (WCAG AA)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="dark"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <DarkModeIcon fontSize="small" color="primary" />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          Dark Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Deep midnight slate palette for low-light environments
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="highContrast"
+                  control={<Radio size="small" />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <ContrastIcon fontSize="small" sx={{ color: '#facc15' }} />
+                      <Box>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          High Contrast Mode
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Pitch black with 21:1 luminance & safety gold accents (WCAG 2.1 AAA)
+                        </Typography>
+                      </Box>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
           </Box>
 
           <Divider />

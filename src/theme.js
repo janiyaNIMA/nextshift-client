@@ -212,7 +212,7 @@ export const getThemeTokens = (mode = 'light') => {
       },
       MuiPaper: {
         styleOverrides: {
-          root: ({ theme }) => ({
+          root: () => ({
             backgroundImage: 'none',
             ...(isHighContrast && {
               border: '1px solid #ffffff',
@@ -242,7 +242,7 @@ export const getThemeTokens = (mode = 'light') => {
       },
       MuiOutlinedInput: {
         styleOverrides: {
-          root: ({ theme }) => ({
+          root: () => ({
             borderRadius: isHighContrast ? 4 : 8,
             ...(isHighContrast && {
               '& .MuiOutlinedInput-notchedOutline': {
@@ -275,7 +275,7 @@ export const getThemeTokens = (mode = 'light') => {
       MuiTableHead: {
         styleOverrides: {
           root: ({ theme }) => ({
-            backgroundColor: theme.palette.mode === 'dark' ? theme.palette.action.hover : '#f8fafc',
+            backgroundColor: theme.palette.background?.subtle || (theme.palette.mode === 'dark' ? theme.palette.action.hover : '#f1f5f9'),
           }),
         },
       },

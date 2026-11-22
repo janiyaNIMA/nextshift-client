@@ -1,52 +1,44 @@
 import { useState, useEffect, useMemo, useCallback } from 'react'
-import { ThemeContext } from './themeContextBase'
+import {
+  ThemeContext,
+  COOKIE_ACTIVE_THEME,
+  COOKIE_USER_THEME_PREFIX,
+  VALID_THEME_MODES,
+  getInitialThemeMode,
+} from './themeContextBase'
 import { useAuth } from './useAuth'
 import { createNextShiftTheme } from '../theme'
 import { getCookie, setCookie } from '../utils/cookies'
-
-const COOKIE_ACTIVE_THEME = 'nextshift_active_theme'
-const COOKIE_USER_THEME_PREFIX = 'nextshift_theme_'
-
-export const VALID_THEME_MODES = ['light', 'dark', 'highContrast']
-
-export function getInitialThemeMode() {
-  const savedActive = getCookie(COOKIE_ACTIVE_THEME)
-  if (savedActive && VALID_THEME_MODES.includes(savedActive)) {
-    return savedActive
-  }
-
-  if (
-    typeof window !== 'undefined' &&
-    window.matchMedia &&
-    window.matchMedia('(prefers-color-scheme: dark)').matches
-  ) {
-    return 'dark'
-  }
-
-  return 'light'
-}
 
 export function ThemeContextProvider({ children }) {
   const { user } = useAuth()
   const [mode, setModeState] = useState(getInitialThemeMode)
 
+  const activeUserId = user?.id
+
   // Listen to user sign-in / profile load for per-user cookie synchronization
   useEffect(() => {
-    if (!user || !user.id) return
+    if (!activeUserId) return
 
-    const userCookieKey = `${COOKIE_USER_THEME_PREFIX}${user.id}`
+    const userCookieKey = `${COOKIE_USER_THEME_PREFIX}${activeUserId}`
     const savedUserMode = getCookie(userCookieKey)
 
     if (savedUserMode && VALID_THEME_MODES.includes(savedUserMode)) {
-      if (savedUserMode !== mode) {
-        setModeState(savedUserMode)
-        setCookie(COOKIE_ACTIVE_THEME, savedUserMode)
-      }
+      setModeState((currentMode) => {
+        if (savedUserMode !== currentMode) {
+          setCookie(COOKIE_ACTIVE_THEME, savedUserMode)
+          return savedUserMode
+        }
+        return currentMode
+      })
     } else {
       // First time this user logs in on this browser: initialize user cookie with active theme
-      setCookie(userCookieKey, mode)
+      setModeState((currentMode) => {
+        setCookie(userCookieKey, currentMode)
+        return currentMode
+      })
     }
-  }, [user?.id])
+  }, [activeUserId])
 
   // Explicit user theme selection
   const setMode = useCallback((newMode) => {
@@ -55,10 +47,10 @@ export function ThemeContextProvider({ children }) {
     setModeState(newMode)
     setCookie(COOKIE_ACTIVE_THEME, newMode)
 
-    if (user && user.id) {
-      setCookie(`${COOKIE_USER_THEME_PREFIX}${user.id}`, newMode)
+    if (activeUserId) {
+      setCookie(`${COOKIE_USER_THEME_PREFIX}${activeUserId}`, newMode)
     }
-  }, [user?.id])
+  }, [activeUserId])
 
   // Cycle through Light -> Dark -> High Contrast -> Light
   const cycleMode = useCallback(() => {

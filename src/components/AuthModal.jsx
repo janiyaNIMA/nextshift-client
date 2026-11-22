@@ -6,8 +6,6 @@ import {
   DialogActions,
   TextField,
   Button,
-  Tabs,
-  Tab,
   Box,
   Typography,
   Alert,
@@ -18,21 +16,19 @@ import {
   FormLabel,
   CircularProgress,
   Stack,
-  Divider,
-  Chip,
+  IconButton,
+  Avatar,
 } from '@mui/material'
 import SchoolIcon from '@mui/icons-material/School'
 import BusinessIcon from '@mui/icons-material/Business'
-import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
+import PersonAddIcon from '@mui/icons-material/PersonAdd'
+import CloseIcon from '@mui/icons-material/Close'
 import { useAuth } from '../context/useAuth'
+import { useNotification } from '../context/useNotification'
 
 export default function AuthModal({ open, onClose, onSuccessNotification }) {
   const { login, register } = useAuth()
-  const [tabIndex, setTabIndex] = useState(0) // 0: Login, 1: Register
-
-  // Login form state
-  const [loginEmail, setLoginEmail] = useState('')
-  const [loginPassword, setLoginPassword] = useState('')
+  const { showError, showSuccess } = useNotification()
 
   // Register form state
   const [regName, setRegName] = useState('')
@@ -43,254 +39,193 @@ export default function AuthModal({ open, onClose, onSuccessNotification }) {
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
 
-  const handleTabChange = (_, newIndex) => {
-    setTabIndex(newIndex)
-    setErrorMessage('')
-  }
-
-  const handleQuickFill = (role) => {
-    if (role === 'admin') {
-      setLoginEmail('admin@example.com')
-      setLoginPassword('AdminSecurePassword123!')
-    } else if (role === 'student') {
-      setLoginEmail('student@example.com')
-      setLoginPassword('Student1234!')
-    } else if (role === 'employer') {
-      setLoginEmail('employer@example.com')
-      setLoginPassword('Employer1234!')
-    }
-  }
-
-  const handleLoginSubmit = async (e) => {
-    e.preventDefault()
-    setErrorMessage('')
-    setLoading(true)
-    try {
-      const user = await login(loginEmail, loginPassword)
-      onSuccessNotification(`Welcome back, ${user.name}! (${user.role})`)
-      onClose()
-    } catch (err) {
-      setErrorMessage(err.message || 'Login failed')
-    } finally {
-      setLoading(false)
-    }
-  }
-
   const handleRegisterSubmit = async (e) => {
     e.preventDefault()
     setErrorMessage('')
+
+    const name = regName.trim()
+    const email = regEmail.trim()
+    const password = regPassword
+
+    if (!name || !email || !password) {
+      setErrorMessage('Please fill in all required fields.')
+      return
+    }
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.')
+      return
+    }
+
     setLoading(true)
     try {
       const user = await register({
-        name: regName,
-        email: regEmail,
-        password: regPassword,
+        name,
+        email,
+        password,
         role: regRole,
       })
-      // If student, automatically log in; if employer, let them know approval status
+
+      // Attempt automatic sign-in after account creation
       try {
-        await login(regEmail, regPassword)
+        await login(email, password)
         if (regRole === 'employer') {
-          onSuccessNotification(`Employer registered! Your account is pending admin approval before posting shifts.`)
+          const msg = 'Employer account registered! Your account is pending admin approval before posting shifts.'
+          if (onSuccessNotification) onSuccessNotification(msg)
+          else showSuccess(msg)
         } else {
-          onSuccessNotification(`Account registered successfully! Welcome ${user.name}.`)
+          const msg = `Account registered successfully! Welcome to NextShift, ${user?.name || name}.`
+          if (onSuccessNotification) onSuccessNotification(msg)
+          else showSuccess(msg)
         }
         onClose()
       } catch {
-        onSuccessNotification(`Account registered! Please sign in with your credentials.`)
-        setTabIndex(0)
-        setLoginEmail(regEmail)
+        const msg = 'Account created successfully! Please sign in with your credentials.'
+        if (onSuccessNotification) onSuccessNotification(msg)
+        else showSuccess(msg)
+        onClose()
       }
     } catch (err) {
-      setErrorMessage(err.message || 'Registration failed')
+      const msg = err.message || 'Registration failed'
+      setErrorMessage(msg)
+      showError(msg, { title: 'Registration Failed' })
     } finally {
       setLoading(false)
     }
   }
 
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth PaperProps={{ sx: { borderRadius: 3 } }}>
-      <DialogTitle sx={{ pb: 1 }}>
-        <Tabs value={tabIndex} onChange={handleTabChange} variant="fullWidth">
-          <Tab label="Sign In" />
-          <Tab label="Create Account" />
-        </Tabs>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="sm"
+      fullWidth
+      PaperProps={{ sx: { borderRadius: 3 } }}
+    >
+      <DialogTitle sx={{ pb: 1, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+          <Avatar sx={{ bgcolor: 'primary.main', width: 38, height: 38 }}>
+            <PersonAddIcon fontSize="small" />
+          </Avatar>
+          <Box>
+            <Typography variant="h6" sx={{ fontWeight: 700, lineHeight: 1.2 }}>
+              Create Account
+            </Typography>
+            <Typography variant="caption" color="text.secondary">
+              Join NextShift as a Student or Employer
+            </Typography>
+          </Box>
+        </Box>
+        <IconButton onClick={onClose} size="small" aria-label="close">
+          <CloseIcon fontSize="small" />
+        </IconButton>
       </DialogTitle>
 
       <DialogContent sx={{ pt: 2 }}>
         {errorMessage && (
-          <Alert severity="error" sx={{ mb: 2 }} onClose={() => setErrorMessage('')}>
+          <Alert severity="error" sx={{ mb: 2, borderRadius: 2 }} onClose={() => setErrorMessage('')}>
             {errorMessage}
           </Alert>
         )}
 
-        {tabIndex === 0 ? (
-          // ================= LOGIN FORM =================
-          <Box component="form" onSubmit={handleLoginSubmit} sx={{ mt: 1 }}>
-            <Stack spacing={2.5}>
-              <TextField
-                label="Email Address"
-                type="email"
-                required
-                fullWidth
-                value={loginEmail}
-                onChange={(e) => setLoginEmail(e.target.value)}
-                placeholder="user@example.com"
-                autoFocus
-              />
-
-              <TextField
-                label="Password"
-                type="password"
-                required
-                fullWidth
-                value={loginPassword}
-                onChange={(e) => setLoginPassword(e.target.value)}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={loading}
-                sx={{ py: 1.2 }}
+        <Box component="form" onSubmit={handleRegisterSubmit} sx={{ mt: 1 }}>
+          <Stack spacing={2.5}>
+            <FormControl component="fieldset">
+              <FormLabel component="legend" sx={{ fontWeight: 600, mb: 0.5 }}>
+                I want to register as:
+              </FormLabel>
+              <RadioGroup
+                row
+                value={regRole}
+                onChange={(e) => setRegRole(e.target.value)}
+                sx={{ gap: 2 }}
               >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Sign In'}
-              </Button>
-            </Stack>
+                <FormControlLabel
+                  value="student"
+                  control={<Radio />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <SchoolIcon fontSize="small" color="info" />
+                      <Typography variant="body2">Student (Immediate access)</Typography>
+                    </Box>
+                  }
+                />
+                <FormControlLabel
+                  value="employer"
+                  control={<Radio />}
+                  label={
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <BusinessIcon fontSize="small" color="warning" />
+                      <Typography variant="body2">Employer (Requires admin approval)</Typography>
+                    </Box>
+                  }
+                />
+              </RadioGroup>
+            </FormControl>
 
-            <Divider sx={{ my: 2.5 }}>
-              <Typography variant="caption" color="text.secondary">
-                Quick Test Credentials
-              </Typography>
-            </Divider>
+            {regRole === 'employer' ? (
+              <Alert severity="info" variant="outlined" sx={{ py: 0.5, borderRadius: 2 }}>
+                Employer accounts start as <strong>pending approval</strong> until an admin approves your profile.
+              </Alert>
+            ) : (
+              <Alert severity="success" variant="outlined" sx={{ py: 0.5, borderRadius: 2 }}>
+                Students are approved immediately upon registration to book shifts.
+              </Alert>
+            )}
 
-            <Stack direction="row" spacing={1} justifyContent="center" flexWrap="wrap" useFlexGap>
-              <Chip
-                icon={<SupervisorAccountIcon fontSize="small" />}
-                label="Admin"
-                size="small"
-                variant="outlined"
-                onClick={() => handleQuickFill('admin')}
-                clickable
-                color="secondary"
-              />
-              <Chip
-                icon={<SchoolIcon fontSize="small" />}
-                label="Student"
-                size="small"
-                variant="outlined"
-                onClick={() => handleQuickFill('student')}
-                clickable
-                color="info"
-              />
-              <Chip
-                icon={<BusinessIcon fontSize="small" />}
-                label="Employer"
-                size="small"
-                variant="outlined"
-                onClick={() => handleQuickFill('employer')}
-                clickable
-                color="warning"
-              />
-            </Stack>
-          </Box>
-        ) : (
-          // ================= REGISTER FORM =================
-          <Box component="form" onSubmit={handleRegisterSubmit} sx={{ mt: 1 }}>
-            <Stack spacing={2.5}>
-              <FormControl component="fieldset">
-                <FormLabel component="legend" sx={{ fontWeight: 600, mb: 0.5 }}>
-                  I want to register as:
-                </FormLabel>
-                <RadioGroup
-                  row
-                  value={regRole}
-                  onChange={(e) => setRegRole(e.target.value)}
-                  sx={{ gap: 2 }}
-                >
-                  <FormControlLabel
-                    value="student"
-                    control={<Radio />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <SchoolIcon fontSize="small" color="info" />
-                        <Typography variant="body2">Student (Immediate access)</Typography>
-                      </Box>
-                    }
-                  />
-                  <FormControlLabel
-                    value="employer"
-                    control={<Radio />}
-                    label={
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                        <BusinessIcon fontSize="small" color="warning" />
-                        <Typography variant="body2">Employer (Requires admin approval)</Typography>
-                      </Box>
-                    }
-                  />
-                </RadioGroup>
-              </FormControl>
+            <TextField
+              label="Full Name"
+              required
+              fullWidth
+              autoFocus
+              value={regName}
+              onChange={(e) => setRegName(e.target.value)}
+              placeholder="Jane Doe"
+              disabled={loading}
+            />
 
-              {regRole === 'employer' ? (
-                <Alert severity="info" variant="outlined" sx={{ py: 0.5 }}>
-                  Employer accounts start as <strong>pending approval</strong> until an admin approves your profile.
-                </Alert>
-              ) : (
-                <Alert severity="success" variant="outlined" sx={{ py: 0.5 }}>
-                  Students are approved immediately upon registration to book shifts.
-                </Alert>
-              )}
+            <TextField
+              label="Email Address"
+              type="email"
+              required
+              fullWidth
+              value={regEmail}
+              onChange={(e) => setRegEmail(e.target.value)}
+              placeholder="name@university.edu"
+              disabled={loading}
+            />
 
-              <TextField
-                label="Full Name"
-                required
-                fullWidth
-                value={regName}
-                onChange={(e) => setRegName(e.target.value)}
-                placeholder="Jane Doe"
-              />
+            <TextField
+              label="Password (min 8 characters)"
+              type="password"
+              required
+              fullWidth
+              value={regPassword}
+              onChange={(e) => setRegPassword(e.target.value)}
+              inputProps={{ minLength: 8 }}
+              disabled={loading}
+            />
 
-              <TextField
-                label="Email Address"
-                type="email"
-                required
-                fullWidth
-                value={regEmail}
-                onChange={(e) => setRegEmail(e.target.value)}
-                placeholder="jane@example.com"
-                helperText="Use standard domains (e.g., example.com)"
-              />
-
-              <TextField
-                label="Password (min 8 characters)"
-                type="password"
-                required
-                fullWidth
-                value={regPassword}
-                onChange={(e) => setRegPassword(e.target.value)}
-                inputProps={{ minLength: 8 }}
-              />
-
-              <Button
-                type="submit"
-                variant="contained"
-                size="large"
-                fullWidth
-                disabled={loading}
-                sx={{ py: 1.2 }}
-              >
-                {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
-              </Button>
-            </Stack>
-          </Box>
-        )}
+            <Button
+              type="submit"
+              variant="contained"
+              size="large"
+              fullWidth
+              disabled={loading}
+              sx={{ py: 1.3, fontWeight: 700, mt: 1 }}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'Create Account'}
+            </Button>
+          </Stack>
+        </Box>
       </DialogContent>
 
-      <DialogActions sx={{ px: 3, pb: 2 }}>
+      <DialogActions sx={{ px: 3, pb: 2.5, pt: 1, justifyContent: 'space-between' }}>
+        <Button onClick={onClose} color="inherit" sx={{ textTransform: 'none', fontWeight: 500 }}>
+          Already have an account? Sign In
+        </Button>
         <Button onClick={onClose} color="inherit">
-          Close
+          Cancel
         </Button>
       </DialogActions>
     </Dialog>

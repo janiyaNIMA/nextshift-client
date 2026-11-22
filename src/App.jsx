@@ -1,17 +1,18 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   ThemeProvider,
   CssBaseline,
   Box,
   Container,
-  Snackbar,
-  Alert,
   Typography,
   Link as MuiLink,
 } from '@mui/material'
-import { theme } from './theme'
 import { AuthProvider } from './context/AuthContext'
 import { useAuth } from './context/useAuth'
+import { ThemeContextProvider } from './context/ThemeContext'
+import { useThemeMode } from './context/useTheme'
+import { NotificationProvider } from './context/NotificationContext'
+import { useNotification } from './context/useNotification'
 import Navbar from './components/Navbar'
 import JobsList from './components/JobsList'
 import StudentBookings from './components/StudentBookings'
@@ -26,26 +27,21 @@ function MainContent() {
   const [currentTab, setCurrentTab] = useState('jobs')
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
   const [authModalOpen, setAuthModalOpen] = useState(false)
+  const { showNotification } = useNotification()
 
-  // Centralized notifications
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: '',
-    severity: 'info', // 'success' | 'error' | 'warning' | 'info'
-  })
-
-  const showNotification = (message, severity = 'info') => {
-    setSnackbar({
-      open: true,
-      message,
-      severity,
-    })
-  }
-
-  const handleCloseSnackbar = (_, reason) => {
-    if (reason === 'clickaway') return
-    setSnackbar((prev) => ({ ...prev, open: false }))
-  }
+  // Automatically redirect user to their role-specific dashboard upon login or role change
+  useEffect(() => {
+    if (user?.role) {
+      const role = user.role.toLowerCase()
+      if (role === 'admin') {
+        setCurrentTab('admin')
+      } else if (role === 'employer') {
+        setCurrentTab('employer')
+      } else if (role === 'student') {
+        setCurrentTab('jobs')
+      }
+    }
+  }, [user?.role, user?.id])
 
   // Adjust tab automatically if unauthorized
   const handleTabChange = (newTab) => {
@@ -109,8 +105,9 @@ function MainContent() {
           py: 3,
           px: 2,
           mt: 'auto',
-          borderTop: '1px solid #e2e8f0',
-          bgcolor: 'white',
+          borderTop: 1,
+          borderColor: 'divider',
+          bgcolor: 'background.paper',
           textAlign: 'center',
         }}
       >
@@ -134,29 +131,29 @@ function MainContent() {
         onClose={() => setAuthModalOpen(false)}
         onSuccessNotification={showNotification}
       />
-
-      {/* Notification Toast */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={5000}
-        onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
-      >
-        <Alert onClose={handleCloseSnackbar} severity={snackbar.severity} sx={{ width: '100%', borderRadius: 2, boxShadow: 3 }}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Box>
+  )
+}
+
+function ThemedApp() {
+  const { theme } = useThemeMode()
+
+  return (
+    <ThemeProvider theme={theme}>
+      <CssBaseline />
+      <NotificationProvider>
+        <MainContent />
+      </NotificationProvider>
+    </ThemeProvider>
   )
 }
 
 export default function App() {
   return (
-    <ThemeProvider theme={theme}>
-      <CssBaseline />
-      <AuthProvider>
-        <MainContent />
-      </AuthProvider>
-    </ThemeProvider>
+    <AuthProvider>
+      <ThemeContextProvider>
+        <ThemedApp />
+      </ThemeContextProvider>
+    </AuthProvider>
   )
 }

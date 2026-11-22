@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   AppBar,
   Toolbar,
@@ -23,11 +23,44 @@ import FiberManualRecordIcon from '@mui/icons-material/FiberManualRecord'
 import SupervisorAccountIcon from '@mui/icons-material/SupervisorAccount'
 import BusinessIcon from '@mui/icons-material/Business'
 import SchoolIcon from '@mui/icons-material/School'
+import LightModeIcon from '@mui/icons-material/LightMode'
+import DarkModeIcon from '@mui/icons-material/DarkMode'
+import ContrastIcon from '@mui/icons-material/Contrast'
+import ScienceIcon from '@mui/icons-material/Science'
 import { useAuth } from '../context/useAuth'
+import { useThemeMode } from '../context/useTheme'
+import { useNotification } from '../context/useNotification'
+import { api } from '../services/api'
+import { normalizeGamificationSummary } from '../gamification/types/gamification'
+import ElementJourneyModal from '../gamification/components/ElementJourneyModal'
 
 export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSettings }) {
   const { user, isAuthenticated, logout, healthStatus, checkHealth } = useAuth()
+  const { mode, cycleMode } = useThemeMode()
+  const { showInfo } = useNotification()
   const [anchorEl, setAnchorEl] = useState(null)
+  const [gamification, setGamification] = useState(null)
+  const [journeyModalOpen, setJourneyModalOpen] = useState(false)
+
+  useEffect(() => {
+    let isMounted = true
+    if (isAuthenticated && user?.role?.toLowerCase() === 'student') {
+      api.getGamificationSummary()
+        .then((data) => {
+          if (isMounted && data) {
+            setGamification(normalizeGamificationSummary(data))
+          }
+        })
+        .catch((err) => {
+          console.debug('Gamification summary fetch error in Navbar:', err)
+        })
+    } else {
+      setGamification(null)
+    }
+    return () => {
+      isMounted = false
+    }
+  }, [isAuthenticated, user])
 
   const handleOpenUserMenu = (event) => {
     setAnchorEl(event.currentTarget)
@@ -40,6 +73,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
   const handleLogout = () => {
     handleCloseUserMenu()
     logout()
+    showInfo('You have been signed out.')
   }
 
   const getRoleIcon = (role) => {
@@ -57,7 +91,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
   }
 
   return (
-    <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'white', color: 'text.primary', borderBottom: '1px solid #e2e8f0' }}>
+    <AppBar position="sticky" elevation={1} sx={{ bgcolor: 'background.paper', color: 'text.primary', borderBottom: 1, borderColor: 'divider' }}>
       <Container maxWidth="xl">
         <Toolbar disableGutters sx={{ justifyContent: 'space-between', minHeight: 64 }}>
           {/* Logo & Brand */}
@@ -133,7 +167,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                   <FiberManualRecordIcon
                     sx={{
                       fontSize: '12px !important',
-                      color: healthStatus.isOnline ? '#10b981 !important' : '#ef4444 !important',
+                      color: (theme) => (healthStatus.isOnline ? `${theme.palette.success.main} !important` : `${theme.palette.error.main} !important`),
                     }}
                   />
                 }
@@ -142,11 +176,47 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                 variant="outlined"
                 sx={{
                   cursor: 'pointer',
-                  borderColor: healthStatus.isOnline ? '#a7f3d0' : '#fecaca',
-                  bgcolor: healthStatus.isOnline ? '#ecfdf5' : '#fef2f2',
+                  borderColor: (theme) => (healthStatus.isOnline ? theme.palette.success.light : theme.palette.error.light),
+                  bgcolor: (theme) => (healthStatus.isOnline
+                    ? (theme.palette.mode === 'dark' ? 'rgba(16, 185, 129, 0.12)' : '#ecfdf5')
+                    : (theme.palette.mode === 'dark' ? 'rgba(239, 68, 68, 0.12)' : '#fef2f2')),
                   display: { xs: 'none', sm: 'inline-flex' },
                 }}
               />
+            </Tooltip>
+
+            {/* Element Journey Badge for Students */}
+            {isAuthenticated && user?.role?.toLowerCase() === 'student' && (
+              <Tooltip title="Element Journey: View your chemical isotope tier & points">
+                <Chip
+                  icon={<ScienceIcon fontSize="small" />}
+                  label={gamification?.currentTier ? `${gamification.currentTier.tierCode} • ${gamification.totalPoints} pts` : `Starter • ${gamification?.totalPoints || 0} pts`}
+                  size="small"
+                  variant="outlined"
+                  color="primary"
+                  clickable
+                  onClick={() => setJourneyModalOpen(true)}
+                  sx={{
+                    fontWeight: 700,
+                    borderRadius: 2,
+                    cursor: 'pointer',
+                    bgcolor: (theme) => (theme.palette.mode === 'dark' ? 'rgba(99, 102, 241, 0.12)' : 'rgba(99, 102, 241, 0.08)'),
+                  }}
+                />
+              </Tooltip>
+            )}
+
+            {/* Theme Toggle Button */}
+            <Tooltip title={`Theme: ${mode === 'highContrast' ? 'High Contrast' : mode === 'dark' ? 'Dark Mode' : 'Light Mode'} (Click to cycle)`}>
+              <IconButton size="small" onClick={cycleMode} sx={{ color: 'text.secondary' }}>
+                {mode === 'highContrast' ? (
+                  <ContrastIcon fontSize="small" />
+                ) : mode === 'dark' ? (
+                  <DarkModeIcon fontSize="small" />
+                ) : (
+                  <LightModeIcon fontSize="small" />
+                )}
+              </IconButton>
             </Tooltip>
 
             {/* Settings button */}
@@ -167,7 +237,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                     cursor: 'pointer',
                     p: 0.5,
                     borderRadius: 3,
-                    '&:hover': { bgcolor: '#f1f5f9' },
+                    '&:hover': { bgcolor: 'action.hover' },
                   }}
                 >
                   <Avatar sx={{ width: 34, height: 34, bgcolor: 'primary.dark', fontSize: '0.9rem' }}>
@@ -231,6 +301,19 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                     </ListItemIcon>
                     Dashboard
                   </MenuItem>
+                  {user?.role?.toLowerCase() === 'student' && (
+                    <MenuItem
+                      onClick={() => {
+                        handleCloseUserMenu()
+                        setJourneyModalOpen(true)
+                      }}
+                    >
+                      <ListItemIcon>
+                        <ScienceIcon fontSize="small" />
+                      </ListItemIcon>
+                      Element Journey
+                    </MenuItem>
+                  )}
                   <Divider />
                   <MenuItem onClick={handleLogout} sx={{ color: 'error.main' }}>
                     <ListItemIcon sx={{ color: 'error.main' }}>
@@ -291,6 +374,15 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
           )}
         </Box>
       </Container>
+
+      {/* Element Journey Modal */}
+      {isAuthenticated && user?.role?.toLowerCase() === 'student' && (
+        <ElementJourneyModal
+          open={journeyModalOpen}
+          onClose={() => setJourneyModalOpen(false)}
+          initialSummary={gamification}
+        />
+      )}
     </AppBar>
   )
 }

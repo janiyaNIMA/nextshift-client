@@ -1,16 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
-import { AuthContext } from './authContextBase'
+import { AuthContext, normalizeUser } from './authContextBase'
 import { api, getToken, setToken, removeToken, getApiBaseUrl, setApiBaseUrl } from '../services/api'
-
-export const normalizeUser = (userData) => {
-  if (!userData) return null
-  return {
-    ...userData,
-    role: typeof userData.role === 'string' ? userData.role.toLowerCase() : userData.role,
-    is_approved: userData.is_approved ?? userData.approved ?? false,
-    is_active: userData.is_active ?? userData.active ?? false,
-  }
-}
 
 export function AuthProvider({ children }) {
   const [token, setTokenState] = useState(getToken())
@@ -65,32 +55,22 @@ export function AuthProvider({ children }) {
 
   // Login handler
   const login = async (email, password) => {
-    setIsLoading(true)
-    try {
-      const res = await api.login(email, password)
-      const tokenVal = res.access_token || res.token
-      setToken(tokenVal)
-      setTokenState(tokenVal)
+    const res = await api.login(email, password)
+    const tokenVal = res.access_token || res.token
+    setToken(tokenVal)
+    setTokenState(tokenVal)
 
-      // Use profile from response or fetch /auth/me
-      const profile = res.user ? normalizeUser(res.user) : normalizeUser(await api.getMe())
-      setUser(profile)
-      return profile
-    } finally {
-      setIsLoading(false)
-    }
+    // Use profile from response or fetch /auth/me
+    const profile = res.user ? normalizeUser(res.user) : normalizeUser(await api.getMe())
+    setUser(profile)
+    return profile
   }
 
   // Register handler
   const register = async ({ name, email, password, role }) => {
-    setIsLoading(true)
-    try {
-      const registeredData = await api.register({ name, email, password, role })
-      const rawUser = registeredData.user || registeredData
-      return normalizeUser(rawUser)
-    } finally {
-      setIsLoading(false)
-    }
+    const registeredData = await api.register({ name, email, password, role })
+    const rawUser = registeredData.user || registeredData
+    return normalizeUser(rawUser)
   }
 
   // Logout handler

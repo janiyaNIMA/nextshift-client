@@ -25,6 +25,9 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  Tabs,
+  Tab,
+  Badge,
 } from '@mui/material'
 import AddIcon from '@mui/icons-material/Add'
 import RefreshIcon from '@mui/icons-material/Refresh'
@@ -33,6 +36,10 @@ import AccessTimeIcon from '@mui/icons-material/AccessTime'
 import AttachMoneyIcon from '@mui/icons-material/AttachMoney'
 import LocationOnIcon from '@mui/icons-material/LocationOn'
 import WarningAmberIcon from '@mui/icons-material/WarningAmber'
+import CheckCircleIcon from '@mui/icons-material/CheckCircle'
+import CancelIcon from '@mui/icons-material/Cancel'
+import StarsIcon from '@mui/icons-material/Stars'
+import FactCheckIcon from '@mui/icons-material/FactCheck'
 import { api } from '../services/api'
 import { useAuth } from '../context/useAuth'
 
@@ -84,6 +91,52 @@ export default function EmployerDashboard({ showNotification }) {
   const [bookings, setBookings] = useState([])
   const [loadingBookings, setLoadingBookings] = useState(false)
   const [bookingsError, setBookingsError] = useState(null)
+
+  // Gamification Work Sessions verification state
+  const [activeTab, setActiveTab] = useState(0) // 0: Vacancies, 1: Shift Verifications
+  const [pendingSessions, setPendingSessions] = useState([])
+  const [loadingSessions, setLoadingSessions] = useState(false)
+  const [sessionActionLoading, setSessionActionLoading] = useState(null)
+
+  const fetchPendingSessions = useCallback(async () => {
+    setLoadingSessions(true)
+    try {
+      const data = await api.getPendingWorkSessions()
+      const list = Array.isArray(data) ? data : (data?.content || [])
+      setPendingSessions(list)
+    } catch (err) {
+      console.warn('Failed to fetch pending work sessions:', err)
+    } finally {
+      setLoadingSessions(false)
+    }
+  }, [])
+
+  const handleConfirmSession = async (sessionId, minutes) => {
+    setSessionActionLoading(sessionId)
+    try {
+      await api.confirmWorkSession(sessionId)
+      const pts = Math.floor(minutes / 60)
+      showNotification(`Shift confirmed! Awarded ${pts} point${pts === 1 ? '' : 's'} to student.`, 'success')
+      fetchPendingSessions()
+    } catch (err) {
+      showNotification(err.message || 'Failed to confirm work session', 'error')
+    } finally {
+      setSessionActionLoading(null)
+    }
+  }
+
+  const handleRejectSession = async (sessionId) => {
+    setSessionActionLoading(sessionId)
+    try {
+      await api.rejectWorkSession(sessionId, 'Hours could not be verified by supervisor')
+      showNotification('Work session rejected.', 'info')
+      fetchPendingSessions()
+    } catch (err) {
+      showNotification(err.message || 'Failed to reject work session', 'error')
+    } finally {
+      setSessionActionLoading(null)
+    }
+  }
 
   const fetchEmployerJobs = useCallback(async () => {
     setLoading(true)
@@ -234,15 +287,18 @@ export default function EmployerDashboard({ showNotification }) {
             Employer Management Hub
           </Typography>
           <Typography variant="body2" color="text.secondary">
-            Manage your posted campus shift vacancies and review student applicants
+            Manage your posted campus shift vacancies, review student applicants, and verify student shift hours
           </Typography>
         </Box>
         <Stack direction="row" spacing={1.5}>
           <Button
             variant="outlined"
             startIcon={<RefreshIcon />}
-            onClick={fetchEmployerJobs}
-            disabled={loading}
+            onClick={() => {
+              fetchEmployerJobs()
+              fetchPendingSessions()
+            }}
+            disabled={loading || loadingSessions}
           >
             Refresh
           </Button>
@@ -258,18 +314,36 @@ export default function EmployerDashboard({ showNotification }) {
         </Stack>
       </Box>
 
+      {/* Tabs */}
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+        <Tabs value={activeTab} onChange={(_, val) => setActiveTab(val)}>
+          <Tab label="Posted Shift Vacancies" />
+          <Tab
+            icon={
+              <Badge badgeContent={pendingSessions.length} color="warning">
+                <FactCheckIcon fontSize="small" sx={{ mr: 0.5 }} />
+              </Badge>
+            }
+            iconPosition="start"
+            label="Shift Work Verifications"
+          />
+        </Tabs>
+      </Box>
+
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {error}
         </Alert>
       )}
 
-      {loading ? (
+      {/* Tab 0: Vacancies */}
+      {activeTab === 0 && (
+        loading ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
           <CircularProgress />
         </Box>
       ) : jobs.length === 0 ? (
-        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: '#f8fafc' }} elevation={0}>
+        <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'action.hover' }} elevation={0}>
           <Typography variant="h6" color="text.secondary" gutterBottom>
             No shift vacancies posted yet
           </Typography>
@@ -317,10 +391,10 @@ export default function EmployerDashboard({ showNotification }) {
                     />
                   </Stack>
 
-                  <Box sx={{ p: 1.5, bgcolor: '#f8fafc', borderRadius: 2, display: 'flex', flexDirection: 'column', gap: 0.8, mb: 2 }}>
+                  <Box sx={{ p: 1.5, bgcolor: 'action.hover', borderRadius: 2, display: 'flex', flexDirection: 'column', gap: 0.8, mb: 2 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                       <AttachMoneyIcon fontSize="small" color="success" />
-                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.dark' }}>
+                      <Typography variant="body2" sx={{ fontWeight: 600, color: 'success.main' }}>
                         ${job.pay_amount?.toFixed(2)} / {job.pay_unit?.replace('_', ' ')}
                       </Typography>
                     </Box>
@@ -356,6 +430,113 @@ export default function EmployerDashboard({ showNotification }) {
             </Grid>
           ))}
         </Grid>
+      )
+    )}
+
+      {/* Tab 1: Shift Work Verifications (Gamification) */}
+      {activeTab === 1 && (
+        loadingSessions ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', py: 8 }}>
+            <CircularProgress />
+          </Box>
+        ) : pendingSessions.length === 0 ? (
+          <Paper sx={{ p: 5, textAlign: 'center', borderRadius: 3, bgcolor: 'action.hover' }} elevation={0}>
+            <FactCheckIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
+            <Typography variant="h6" color="text.secondary" gutterBottom>
+              No pending shift verifications
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              When students complete their booked shifts and submit their hours, they will appear here for you to verify and award Element Journey points.
+            </Typography>
+          </Paper>
+        ) : (
+          <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 3 }}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell sx={{ fontWeight: 700 }}>Student</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Shift / Job</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Completed Hours</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Points to Award</TableCell>
+                  <TableCell sx={{ fontWeight: 700 }}>Notes</TableCell>
+                  <TableCell align="right" sx={{ fontWeight: 700 }}>Action</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {pendingSessions.map((session) => {
+                  const minutes = session.verifiedMinutes || session.verified_minutes || 0
+                  const hours = Math.floor(minutes / 60)
+                  const mins = minutes % 60
+                  const pts = Math.floor(minutes / 60)
+                  const isActioning = sessionActionLoading === session.id
+
+                  return (
+                    <TableRow key={session.id}>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 700 }}>
+                          {session.studentName || session.student_name || `Student #${session.studentId || session.student_id}`}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Submitted {formatDateTime(session.submittedAt || session.submitted_at)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {session.jobTitle || session.job_title || 'Campus Shift'}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {formatDateTime(session.startedAt || session.started_at)} – {formatDateTime(session.endedAt || session.ended_at)}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                          {hours}h {mins}m ({minutes} mins)
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<StarsIcon fontSize="small" />}
+                          label={`+${pts} pts`}
+                          color="primary"
+                          sx={{ fontWeight: 800 }}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="caption" color="text.secondary">
+                          {session.notes || 'No notes provided'}
+                        </Typography>
+                      </TableCell>
+                      <TableCell align="right">
+                        <Stack direction="row" spacing={1} justifyContent="flex-end">
+                          <Button
+                            size="small"
+                            variant="contained"
+                            color="success"
+                            startIcon={isActioning ? <CircularProgress size={16} color="inherit" /> : <CheckCircleIcon />}
+                            disabled={Boolean(sessionActionLoading)}
+                            onClick={() => handleConfirmSession(session.id, minutes)}
+                          >
+                            Verify & Award
+                          </Button>
+                          <Button
+                            size="small"
+                            variant="outlined"
+                            color="error"
+                            startIcon={<CancelIcon />}
+                            disabled={Boolean(sessionActionLoading)}
+                            onClick={() => handleRejectSession(session.id)}
+                          >
+                            Reject
+                          </Button>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  )
+                })}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        )
       )}
 
       {/* ================= CREATE JOB MODAL ================= */}
@@ -530,7 +711,7 @@ export default function EmployerDashboard({ showNotification }) {
                 <CircularProgress />
               </Box>
             ) : bookings.length === 0 ? (
-              <Paper sx={{ p: 4, textAlign: 'center', bgcolor: '#f8fafc' }} elevation={0}>
+              <Paper sx={{ p: 4, textAlign: 'center', bgcolor: 'action.hover' }} elevation={0}>
                 <Typography variant="body1" color="text.secondary">
                   No students have booked this shift yet.
                 </Typography>
@@ -538,7 +719,7 @@ export default function EmployerDashboard({ showNotification }) {
             ) : (
               <TableContainer component={Paper} variant="outlined" sx={{ borderRadius: 2 }}>
                 <Table size="small">
-                  <TableHead sx={{ bgcolor: '#f8fafc' }}>
+                  <TableHead sx={{ bgcolor: 'action.hover' }}>
                     <TableRow>
                       <TableCell sx={{ fontWeight: 700 }}>Booking ID</TableCell>
                       <TableCell sx={{ fontWeight: 700 }}>Student Name</TableCell>

@@ -96,7 +96,10 @@ async function request(endpoint, options = {}) {
       headers,
     })
   } catch (err) {
-    throw new Error(`Network error: Could not connect to API server (${url}). ${err.message}`)
+    if (err.message && err.message.toLowerCase().includes('failed to fetch')) {
+      throw new Error(`Unable to connect to NextShift API at ${url}. Please ensure the backend server is running on port 8080.`)
+    }
+    throw new Error(`Network error connecting to API (${url}): ${err.message}`)
   }
 
   if (response.status === 204) {
@@ -317,6 +320,88 @@ export const api = {
   async approveJob(jobId) {
     return request(`/admin/jobs/${jobId}/approve`, {
       method: 'PATCH',
+    })
+  },
+
+  // ==========================================
+  // Gamification & Element Journey Endpoints
+  // ==========================================
+
+  /**
+   * Student: Get current gamification summary (total points, current tier, next tier, progress %)
+   */
+  async getGamificationSummary() {
+    return request('/students/me/gamification', {
+      method: 'GET',
+    })
+  },
+
+  /**
+   * Student: Get paginated point transaction history
+   */
+  async getGamificationTransactions(page = 0, size = 20) {
+    return request(`/students/me/gamification/transactions?page=${page}&size=${size}`, {
+      method: 'GET',
+    })
+  },
+
+  /**
+   * Get all active chemistry element tiers progression
+   */
+  async getGamificationTiers() {
+    return request('/students/me/gamification/tiers', {
+      method: 'GET',
+    })
+  },
+
+  /**
+   * Student: Submit completed work session for a confirmed booking
+   */
+  async submitWorkSession(bookingId, { startedAt, endedAt, notes }) {
+    return request(`/bookings/${bookingId}/work-sessions`, {
+      method: 'POST',
+      body: JSON.stringify({
+        started_at: startedAt,
+        ended_at: endedAt,
+        notes,
+      }),
+    })
+  },
+
+  /**
+   * Get work sessions for a booking (Student or Employer)
+   */
+  async getWorkSessionsForBooking(bookingId) {
+    return request(`/bookings/${bookingId}/work-sessions`, {
+      method: 'GET',
+    })
+  },
+
+  /**
+   * Employer: Confirm work session & atomically award points
+   */
+  async confirmWorkSession(sessionId) {
+    return request(`/employer/work-sessions/${sessionId}/confirm`, {
+      method: 'POST',
+    })
+  },
+
+  /**
+   * Employer: Reject work session
+   */
+  async rejectWorkSession(sessionId, reason) {
+    return request(`/employer/work-sessions/${sessionId}/reject`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
+    })
+  },
+
+  /**
+   * Employer: Get all pending work sessions awaiting verification
+   */
+  async getPendingWorkSessions() {
+    return request('/employer/work-sessions/pending', {
+      method: 'GET',
     })
   },
 }
