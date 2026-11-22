@@ -191,13 +191,13 @@ export const getThemeTokens = (mode = 'light') => {
       },
     },
     shape: {
-      borderRadius: isHighContrast ? 4 : 10,
+      borderRadius: 4,
     },
     components: {
       MuiCard: {
         styleOverrides: {
           root: ({ theme }) => ({
-            borderRadius: isHighContrast ? 4 : 12,
+            borderRadius: 4,
             border: isHighContrast
               ? '2px solid #ffffff'
               : `1px solid ${theme.palette.divider}`,
@@ -223,7 +223,7 @@ export const getThemeTokens = (mode = 'light') => {
       MuiButton: {
         styleOverrides: {
           root: {
-            borderRadius: isHighContrast ? 4 : 8,
+            borderRadius: isHighContrast ? 3 : 6,
             boxShadow: 'none',
             fontWeight: 600,
             textTransform: 'none',
@@ -243,7 +243,7 @@ export const getThemeTokens = (mode = 'light') => {
       MuiOutlinedInput: {
         styleOverrides: {
           root: () => ({
-            borderRadius: isHighContrast ? 4 : 8,
+            borderRadius: isHighContrast ? 3 : 6,
             ...(isHighContrast && {
               '& .MuiOutlinedInput-notchedOutline': {
                 borderColor: '#ffffff',
@@ -265,8 +265,8 @@ export const getThemeTokens = (mode = 'light') => {
         styleOverrides: {
           root: {
             fontWeight: 500,
+            borderRadius: isHighContrast ? 3 : 6,
             ...(isHighContrast && {
-              borderRadius: 4,
               border: '1.5px solid currentColor',
             }),
           },

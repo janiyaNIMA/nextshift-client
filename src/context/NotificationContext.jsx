@@ -152,7 +152,7 @@ export function NotificationProvider({ children }) {
           variant="filled"
           sx={(theme) => ({
             width: '100%',
-            borderRadius: theme.shape?.borderRadius || 2,
+            borderRadius: `${theme.shape.borderRadius}px`,
             boxShadow: theme.palette.mode === 'highContrast'
               ? 'none'
               : '0 8px 32px rgba(0, 0, 0, 0.24)',
@@ -185,7 +185,7 @@ export function NotificationProvider({ children }) {
         fullWidth
         PaperProps={{
           sx: (theme) => ({
-            borderRadius: theme.shape?.borderRadius || 3,
+            borderRadius: `${theme.shape.borderRadius}px`,
             p: 1,
             border: theme.palette.mode === 'highContrast' ? '2px solid #ffffff' : undefined,
           }),

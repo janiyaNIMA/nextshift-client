@@ -81,7 +81,7 @@ export default function ElementJourneyModal({ open, onClose, initialSummary }) {
       fullWidth
       PaperProps={{
         sx: (theme) => ({
-          borderRadius: theme.shape?.borderRadius || 3,
+          borderRadius: `${theme.shape.borderRadius}px`,
           minHeight: 520,
         }),
       }}
