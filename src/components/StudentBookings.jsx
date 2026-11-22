@@ -29,7 +29,8 @@ export default function StudentBookings({ onBrowseJobs }) {
     setError(null)
     try {
       const data = await api.getMyBookings({ limit: 50 })
-      setBookings(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : (data?.content || [])
+      setBookings(items)
     } catch (err) {
       setError(err.message || 'Failed to fetch bookings')
     } finally {
@@ -119,7 +120,7 @@ export default function StudentBookings({ onBrowseJobs }) {
                       </Box>
                       <Chip
                         label={booking.status || 'confirmed'}
-                        color={booking.status === 'confirmed' ? 'success' : 'default'}
+                        color={booking.status?.toLowerCase() === 'confirmed' ? 'success' : 'default'}
                         size="small"
                         sx={{ textTransform: 'capitalize', fontWeight: 600 }}
                       />

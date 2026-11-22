@@ -7,7 +7,12 @@ const STORAGE_TOKEN_KEY = 'nextshift_access_token'
 const STORAGE_BASE_URL_KEY = 'nextshift_api_base_url'
 
 export const getApiBaseUrl = () => {
-  return localStorage.getItem(STORAGE_BASE_URL_KEY) || 'http://172.237.81.7:8080/api/v1'
+  const stored = localStorage.getItem(STORAGE_BASE_URL_KEY)
+  if (stored && (stored.includes('172.237.81.7') || stored.includes(':8000'))) {
+    localStorage.removeItem(STORAGE_BASE_URL_KEY)
+    return 'http://localhost:8080/api/v1'
+  }
+  return stored || 'http://localhost:8080/api/v1'
 }
 
 export const setApiBaseUrl = (url) => {
@@ -48,7 +53,14 @@ export const formatErrorMessage = (errorData, status) => {
       .join(' | ')
   }
 
-  if (typeof errorData.detail === 'string') {
+  // Handle Spring Boot validation errors (details map: { field: "message" })
+  if (errorData.details && typeof errorData.details === 'object' && Object.keys(errorData.details).length > 0) {
+    return Object.entries(errorData.details)
+      .map(([field, msg]) => `${field}: ${msg}`)
+      .join(' | ')
+  }
+
+  if (typeof errorData.detail === 'string' && errorData.detail) {
     return errorData.detail
   }
 
@@ -177,11 +189,12 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
 
     const queryString = params.toString() ? `?${params.toString()}` : ''
-    return request(`/jobs${queryString}`, {
+    const res = await request(`/jobs${queryString}`, {
       method: 'GET',
       // Public endpoint: avoid sending auth headers so stale/role-specific tokens never block the feed.
       skipAuth: true,
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**
@@ -213,9 +226,10 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
     const qs = params.toString() ? `?${params.toString()}` : ''
 
-    return request(`/bookings/me${qs}`, {
+    const res = await request(`/bookings/me${qs}`, {
       method: 'GET',
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**
@@ -237,9 +251,10 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
     const qs = params.toString() ? `?${params.toString()}` : ''
 
-    return request(`/employer/jobs${qs}`, {
+    const res = await request(`/employer/jobs${qs}`, {
       method: 'GET',
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**
@@ -251,9 +266,10 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
     const qs = params.toString() ? `?${params.toString()}` : ''
 
-    return request(`/employer/jobs/${jobId}/bookings${qs}`, {
+    const res = await request(`/employer/jobs/${jobId}/bookings${qs}`, {
       method: 'GET',
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**
@@ -265,9 +281,10 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
     const qs = params.toString() ? `?${params.toString()}` : ''
 
-    return request(`/admin/employers/pending${qs}`, {
+    const res = await request(`/admin/employers/pending${qs}`, {
       method: 'GET',
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**
@@ -288,9 +305,10 @@ export const api = {
     if (limit !== undefined) params.append('limit', limit)
     const qs = params.toString() ? `?${params.toString()}` : ''
 
-    return request(`/admin/jobs/pending${qs}`, {
+    const res = await request(`/admin/jobs/pending${qs}`, {
       method: 'GET',
     })
+    return Array.isArray(res) ? res : (res?.content || [])
   },
 
   /**

@@ -19,11 +19,13 @@ import EmployerDashboard from './components/EmployerDashboard'
 import AdminDashboard from './components/AdminDashboard'
 import SettingsModal from './components/SettingsModal'
 import AuthLoginPage from './components/AuthLoginPage'
+import AuthModal from './components/AuthModal'
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth()
   const [currentTab, setCurrentTab] = useState('jobs')
   const [settingsModalOpen, setSettingsModalOpen] = useState(false)
+  const [authModalOpen, setAuthModalOpen] = useState(false)
 
   // Centralized notifications
   const [snackbar, setSnackbar] = useState({
@@ -47,15 +49,16 @@ function MainContent() {
 
   // Adjust tab automatically if unauthorized
   const handleTabChange = (newTab) => {
-    if (newTab === 'my-bookings' && (!isAuthenticated || user?.role !== 'student')) {
+    const role = user?.role?.toLowerCase()
+    if (newTab === 'my-bookings' && (!isAuthenticated || role !== 'student')) {
       showNotification('Please sign in as a student to view your bookings', 'warning')
       return
     }
-    if (newTab === 'employer' && (!isAuthenticated || user?.role !== 'employer')) {
+    if (newTab === 'employer' && (!isAuthenticated || role !== 'employer')) {
       showNotification('Please sign in as an employer to access employer hub', 'warning')
       return
     }
-    if (newTab === 'admin' && (!isAuthenticated || user?.role !== 'admin')) {
+    if (newTab === 'admin' && (!isAuthenticated || role !== 'admin')) {
       showNotification('Please sign in with administrator credentials', 'warning')
       return
     }
@@ -71,7 +74,7 @@ function MainContent() {
       <Navbar
         currentTab={currentTab}
         onTabChange={handleTabChange}
-        onOpenAuth={() => {}}
+        onOpenAuth={() => setAuthModalOpen(true)}
         onOpenSettings={() => setSettingsModalOpen(true)}
       />
 
@@ -123,6 +126,13 @@ function MainContent() {
       <SettingsModal
         open={settingsModalOpen}
         onClose={() => setSettingsModalOpen(false)}
+      />
+
+      {/* Auth Modal (Sign In / Register) */}
+      <AuthModal
+        open={authModalOpen}
+        onClose={() => setAuthModalOpen(false)}
+        onSuccessNotification={showNotification}
       />
 
       {/* Notification Toast */}

@@ -90,7 +90,8 @@ export default function EmployerDashboard({ showNotification }) {
     setError(null)
     try {
       const data = await api.getEmployerJobs({ limit: 50 })
-      setJobs(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : (data?.content || [])
+      setJobs(items)
     } catch (err) {
       setError(err.message || 'Failed to fetch your jobs')
     } finally {
@@ -174,7 +175,8 @@ export default function EmployerDashboard({ showNotification }) {
     setBookingsError(null)
     try {
       const data = await api.getJobBookings(job.id)
-      setBookings(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : (data?.content || [])
+      setBookings(items)
     } catch (err) {
       setBookingsError(err.message || 'Failed to fetch applicants')
     } finally {
@@ -183,7 +185,7 @@ export default function EmployerDashboard({ showNotification }) {
   }
 
   const getStatusColor = (status) => {
-    switch (status) {
+    switch (status?.toLowerCase()) {
       case 'published':
         return 'success'
       case 'pending':
@@ -555,7 +557,7 @@ export default function EmployerDashboard({ showNotification }) {
                           <Chip
                             size="small"
                             label={b.status}
-                            color={b.status === 'confirmed' ? 'success' : 'default'}
+                            color={b.status?.toLowerCase() === 'confirmed' ? 'success' : 'default'}
                             sx={{ textTransform: 'capitalize' }}
                           />
                         </TableCell>

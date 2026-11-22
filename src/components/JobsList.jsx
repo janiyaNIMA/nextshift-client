@@ -56,7 +56,8 @@ export default function JobsList({ onOpenAuth, showNotification }) {
         location: locationFilter.trim() || undefined,
         limit: 50,
       })
-      setJobs(Array.isArray(data) ? data : [])
+      const items = Array.isArray(data) ? data : (data?.content || [])
+      setJobs(items)
     } catch (err) {
       setError(err.message || 'Failed to load shifts')
     } finally {
@@ -74,7 +75,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
       return
     }
 
-    if (user?.role !== 'student') {
+    if (user?.role?.toLowerCase() !== 'student') {
       showNotification('Only students can book shifts', 'warning')
       return
     }
@@ -344,7 +345,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
                       View Details
                     </Button>
 
-                    {user?.role === 'student' ? (
+                    {user?.role?.toLowerCase() === 'student' ? (
                       <Button
                         variant="contained"
                         size="small"
@@ -395,7 +396,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
               <Chip
                 label={`Status: ${selectedJob.status}`}
                 size="small"
-                color={selectedJob.status === 'published' ? 'success' : 'default'}
+                color={selectedJob.status?.toLowerCase() === 'published' ? 'success' : 'default'}
               />
             </Stack>
           </DialogTitle>
@@ -453,7 +454,7 @@ export default function JobsList({ onOpenAuth, showNotification }) {
               Close
             </Button>
 
-            {user?.role === 'student' && (
+            {user?.role?.toLowerCase() === 'student' && (
               <Button
                 variant="contained"
                 color="primary"

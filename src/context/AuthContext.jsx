@@ -2,6 +2,16 @@ import { useState, useEffect, useCallback } from 'react'
 import { AuthContext } from './authContextBase'
 import { api, getToken, setToken, removeToken, getApiBaseUrl, setApiBaseUrl } from '../services/api'
 
+export const normalizeUser = (userData) => {
+  if (!userData) return null
+  return {
+    ...userData,
+    role: typeof userData.role === 'string' ? userData.role.toLowerCase() : userData.role,
+    is_approved: userData.is_approved ?? userData.approved ?? false,
+    is_active: userData.is_active ?? userData.active ?? false,
+  }
+}
+
 export function AuthProvider({ children }) {
   const [token, setTokenState] = useState(getToken())
   const [user, setUser] = useState(null)
@@ -32,7 +42,7 @@ export function AuthProvider({ children }) {
 
     try {
       const profile = await api.getMe()
-      setUser(profile)
+      setUser(normalizeUser(profile))
     } catch (err) {
       // If 401 Unauthorized, token expired or invalid
       if (err.status === 401) {
@@ -58,11 +68,12 @@ export function AuthProvider({ children }) {
     setIsLoading(true)
     try {
       const res = await api.login(email, password)
-      setToken(res.access_token)
-      setTokenState(res.access_token)
+      const tokenVal = res.access_token || res.token
+      setToken(tokenVal)
+      setTokenState(tokenVal)
 
-      // Fetch user info
-      const profile = await api.getMe()
+      // Use profile from response or fetch /auth/me
+      const profile = res.user ? normalizeUser(res.user) : normalizeUser(await api.getMe())
       setUser(profile)
       return profile
     } finally {
@@ -74,8 +85,9 @@ export function AuthProvider({ children }) {
   const register = async ({ name, email, password, role }) => {
     setIsLoading(true)
     try {
-      const registeredUser = await api.register({ name, email, password, role })
-      return registeredUser
+      const registeredData = await api.register({ name, email, password, role })
+      const rawUser = registeredData.user || registeredData
+      return normalizeUser(rawUser)
     } finally {
       setIsLoading(false)
     }

@@ -43,14 +43,16 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
   }
 
   const getRoleIcon = (role) => {
-    if (role === 'admin') return <SupervisorAccountIcon fontSize="small" />
-    if (role === 'employer') return <BusinessIcon fontSize="small" />
+    const r = role?.toLowerCase()
+    if (r === 'admin') return <SupervisorAccountIcon fontSize="small" />
+    if (r === 'employer') return <BusinessIcon fontSize="small" />
     return <SchoolIcon fontSize="small" />
   }
 
   const getRoleColor = (role) => {
-    if (role === 'admin') return 'secondary'
-    if (role === 'employer') return 'warning'
+    const r = role?.toLowerCase()
+    if (r === 'admin') return 'secondary'
+    if (r === 'employer') return 'warning'
     return 'info'
   }
 
@@ -87,7 +89,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
               Browse Shifts
             </Button>
 
-            {isAuthenticated && user?.role === 'student' && (
+            {isAuthenticated && user?.role?.toLowerCase() === 'student' && (
               <Button
                 variant={currentTab === 'my-bookings' ? 'contained' : 'text'}
                 color="primary"
@@ -98,7 +100,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
               </Button>
             )}
 
-            {isAuthenticated && user?.role === 'employer' && (
+            {isAuthenticated && user?.role?.toLowerCase() === 'employer' && (
               <Button
                 variant={currentTab === 'employer' ? 'contained' : 'text'}
                 color="primary"
@@ -109,7 +111,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
               </Button>
             )}
 
-            {isAuthenticated && user?.role === 'admin' && (
+            {isAuthenticated && user?.role?.toLowerCase() === 'admin' && (
               <Button
                 variant={currentTab === 'admin' ? 'contained' : 'text'}
                 color="primary"
@@ -124,7 +126,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
           {/* Right Section: Status, Settings, Profile / Login */}
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
             {/* Server Health Status Pill */}
-            <Tooltip title={`Backend: ${healthStatus.isOnline ? 'Online (http://localhost:8000)' : healthStatus.error || 'Offline'} - Click to re-check`}>
+            <Tooltip title={`Backend: ${healthStatus.isOnline ? 'Online (http://localhost:8080)' : healthStatus.error || 'Offline'} - Click to re-check`}>
               <Chip
                 size="small"
                 icon={
@@ -183,7 +185,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                         color={getRoleColor(user?.role)}
                         sx={{ height: 20, fontSize: '0.65rem', textTransform: 'capitalize' }}
                       />
-                      {user?.role === 'employer' && !user?.is_approved && (
+                      {user?.role?.toLowerCase() === 'employer' && !user?.is_approved && (
                         <Chip
                           size="small"
                           label="Pending Approval"
@@ -218,9 +220,10 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
                   <MenuItem
                     onClick={() => {
                       handleCloseUserMenu()
-                      if (user?.role === 'student') onTabChange('my-bookings')
-                      else if (user?.role === 'employer') onTabChange('employer')
-                      else if (user?.role === 'admin') onTabChange('admin')
+                      const r = user?.role?.toLowerCase()
+                      if (r === 'student') onTabChange('my-bookings')
+                      else if (r === 'employer') onTabChange('employer')
+                      else if (r === 'admin') onTabChange('admin')
                     }}
                   >
                     <ListItemIcon>
@@ -259,7 +262,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
           >
             Shifts
           </Button>
-          {isAuthenticated && user?.role === 'student' && (
+          {isAuthenticated && user?.role?.toLowerCase() === 'student' && (
             <Button
               size="small"
               variant={currentTab === 'my-bookings' ? 'contained' : 'outlined'}
@@ -268,7 +271,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
               My Bookings
             </Button>
           )}
-          {isAuthenticated && user?.role === 'employer' && (
+          {isAuthenticated && user?.role?.toLowerCase() === 'employer' && (
             <Button
               size="small"
               variant={currentTab === 'employer' ? 'contained' : 'outlined'}
@@ -277,7 +280,7 @@ export default function Navbar({ currentTab, onTabChange, onOpenAuth, onOpenSett
               Employer Hub
             </Button>
           )}
-          {isAuthenticated && user?.role === 'admin' && (
+          {isAuthenticated && user?.role?.toLowerCase() === 'admin' && (
             <Button
               size="small"
               variant={currentTab === 'admin' ? 'contained' : 'outlined'}
