@@ -54,6 +54,10 @@ The settings dialog can save a browser-specific URL override. That saved value t
 
 Because the browser connects directly to the configured backend origin, the backend must allow the frontend's origin through its CORS configuration.
 
+## Background Images
+
+The sign-in and dashboard backgrounds are local images in `src/assets/images/`. They are sourced from Unsplash: [sign-in campus group](https://images.unsplash.com/photo-1523580494863-6f3031224c94) and [dashboard library study group](https://images.unsplash.com/photo-1523240795612-9a054b0db644). Theme-aware overlays keep foreground text and controls readable.
+
 ## Available Commands
 
 | Command | Description |

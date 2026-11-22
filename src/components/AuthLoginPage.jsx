@@ -32,6 +32,7 @@ import { useThemeMode } from '../context/useTheme'
 import { useNotification } from '../context/useNotification'
 import AuthModal from './AuthModal'
 import SettingsModal from './SettingsModal'
+import loginBackground from '../assets/images/login-background.jpg'
 
 export default function AuthLoginPage() {
   const { login, isLoading, healthStatus, checkHealth } = useAuth()
@@ -122,6 +123,17 @@ export default function AuthLoginPage() {
         alignItems: 'center',
         justifyContent: 'center',
         bgcolor: 'background.default',
+        backgroundImage: (theme) => {
+          const overlay = theme.palette.themeMode === 'highContrast'
+            ? 'rgba(0, 0, 0, 0.9)'
+            : theme.palette.mode === 'dark'
+              ? 'rgba(11, 15, 25, 0.8)'
+              : 'rgba(248, 250, 252, 0.74)'
+          return `linear-gradient(${overlay}, ${overlay}), url("${loginBackground}")`
+        },
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
         p: { xs: 2, sm: 3 },
         position: 'relative',
       }}

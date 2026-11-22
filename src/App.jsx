@@ -21,6 +21,7 @@ import AdminDashboard from './components/AdminDashboard'
 import SettingsModal from './components/SettingsModal'
 import AuthLoginPage from './components/AuthLoginPage'
 import AuthModal from './components/AuthModal'
+import dashboardBackground from './assets/images/dashboard-background.jpg'
 
 function MainContent() {
   const { user, isAuthenticated } = useAuth()
@@ -66,7 +67,25 @@ function MainContent() {
   }
 
   return (
-    <Box sx={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', bgcolor: 'background.default' }}>
+    <Box
+      sx={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        bgcolor: 'background.default',
+        backgroundImage: (theme) => {
+          const overlay = theme.palette.themeMode === 'highContrast'
+            ? 'rgba(0, 0, 0, 0.92)'
+            : theme.palette.mode === 'dark'
+              ? 'rgba(11, 15, 25, 0.84)'
+              : 'rgba(248, 250, 252, 0.8)'
+          return `linear-gradient(${overlay}, ${overlay}), url("${dashboardBackground}")`
+        },
+        backgroundPosition: 'center',
+        backgroundSize: 'cover',
+        backgroundAttachment: 'fixed',
+      }}
+    >
       <Navbar
         currentTab={currentTab}
         onTabChange={handleTabChange}
